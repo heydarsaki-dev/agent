@@ -26,6 +26,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.past9.phoneaos.App
+import com.past9.phoneaos.ui.i18n.I18n
+import com.past9.phoneaos.ui.i18n.tr
+import com.past9.phoneaos.ui.i18n.trArgs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -35,6 +38,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun HandoffSheet(onDone: () -> Unit) {
     val ctx = LocalContext.current
+    val lang = I18n.language(ctx)
     val scope = rememberCoroutineScope()
     var signedIn by remember { mutableStateOf(HandoffStore.peek(ctx)) }
     var url by remember { mutableStateOf("") }
@@ -49,32 +53,32 @@ fun HandoffSheet(onDone: () -> Unit) {
                 val token = withContext(Dispatchers.IO) { HandoffClient().signIn(url, email, password, create) }
                 HandoffStore(App.graph(ctx).settings).save(url.trim().trimEnd('/'), email.trim(), token)
                 signedIn = email.trim(); password = ""; Handoffs.onScreen(ctx)
-            } catch (e: HandoffException) { error = e.message } catch (e: Exception) { error = e.message ?: "That didn't work." }
+            } catch (e: HandoffException) { error = e.message } catch (e: Exception) { error = e.message ?: I18n.tr("That didn't work.", lang) }
             busy = false
         }
     }
     ModalBottomSheet(onDismissRequest = onDone) {
         Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 24.dp)) {
-            Text("Hand-offs", style = MaterialTheme.typography.headlineSmall)
+            Text(tr("Hand-offs"), style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.height(8.dp))
-            Text("Jobs you hand to your own computers report back through a sync service that you run. Nothing goes through anyone else, and nothing runs on your phone while the app is closed: results wait there and show up when you open the app.",
+            Text(tr("Jobs you hand to your own computers report back through a sync service that you run. Nothing goes through anyone else, and nothing runs on your phone while the app is closed: results wait there and show up when you open the app."),
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(16.dp))
             if (signedIn != null) {
-                Text("Signed in as $signedIn", style = MaterialTheme.typography.titleSmall)
+                Text(trArgs("Signed in as %1\$s", signedIn), style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.height(16.dp))
-                OutlinedButton(onClick = { Handoffs.offScreen(); HandoffStore(App.graph(ctx).settings).signOut(); signedIn = null }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Sign out") }
+                OutlinedButton(onClick = { Handoffs.offScreen(); HandoffStore(App.graph(ctx).settings).signOut(); signedIn = null }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text(tr("Sign out")) }
             } else {
-                OutlinedTextField(url, { url = it }, label = { Text("Your sync service address (https://…)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium)
+                OutlinedTextField(url, { url = it }, label = { Text(tr("Your sync service address (https://…)")) }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium)
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(email, { email = it }, label = { Text("Email") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium)
+                OutlinedTextField(email, { email = it }, label = { Text(tr("Email")) }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium)
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(password, { password = it }, label = { Text("Password") }, singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium)
+                OutlinedTextField(password, { password = it }, label = { Text(tr("Password")) }, singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp)) }
                 Spacer(Modifier.height(16.dp))
-                Button(onClick = { go(false) }, enabled = !busy && url.isNotBlank() && email.isNotBlank() && password.length >= 6, modifier = Modifier.fillMaxWidth().height(56.dp), shapes = ButtonDefaults.shapes()) { Text(if (busy) "Signing in…" else "Sign in") }
+                Button(onClick = { go(false) }, enabled = !busy && url.isNotBlank() && email.isNotBlank() && password.length >= 6, modifier = Modifier.fillMaxWidth().height(56.dp), shapes = ButtonDefaults.shapes()) { Text(if (busy) tr("Signing in…") else tr("Sign in")) }
                 Spacer(Modifier.height(8.dp))
-                OutlinedButton(onClick = { go(true) }, enabled = !busy && url.isNotBlank() && email.isNotBlank() && password.length >= 6, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Create the account on my service") }
+                OutlinedButton(onClick = { go(true) }, enabled = !busy && url.isNotBlank() && email.isNotBlank() && password.length >= 6, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text(tr("Create the account on my service")) }
             }
         }
     }

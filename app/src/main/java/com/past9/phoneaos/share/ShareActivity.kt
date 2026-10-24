@@ -209,7 +209,7 @@ class ShareActivity : ComponentActivity() {
                                     AgentAvatar(working = phase == Phase.SENDING, size = 44.dp)
                                     Spacer(Modifier.width(12.dp))
                                     Column {
-                                        Text("Send to $name", style = MaterialTheme.typography.titleLarge, color = cs.onSurface)
+                                        Text(trArgs("Send to %1\$s", name), style = MaterialTheme.typography.titleLarge, color = cs.onSurface)
                                         Text(summary(), style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
                                     }
                                 }

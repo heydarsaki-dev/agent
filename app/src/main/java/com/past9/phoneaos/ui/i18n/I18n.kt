@@ -33,7 +33,28 @@ object I18n {
     fun trArgs(template: String, language: String, vararg args: Any?): String {
         if (!isPersian(language)) return String.format(java.util.Locale.US, template, *args)
         val t = fa[template] ?: template
-        return String.format(PERSIAN_LOCALE, t, *args)
+        // %s alone never localises digits: "5" stays Latin even under fa-IR. Counts and
+        // durations are passed as Numbers, so spell those in Persian digits here; names,
+        // emails and urls arrive as Strings and must stay exactly as the user typed them.
+        // Templates with %d (or %1$d etc.) let Java's formatter localise digits natively —
+        // converting the arg to a String would crash. Detect %d and only convert Numbers
+        // when the template has no decimal conversion.
+        val hasDecimal = java.util.regex.Pattern.compile("%\\d*\\$?d").matcher(t).find()
+        val local = java.util.Arrays.copyOf(args, args.size).map {
+            if (it is Number && !hasDecimal) persianDigits(it.toString()) else it
+        }
+        return String.format(PERSIAN_LOCALE, t, *local.toTypedArray())
+    }
+
+    /** The ten Indodecimal digits, indexed by the Latin digit they replace. */
+    private val FA_DIGITS = charArrayOf('۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹')
+
+    /** Rewrite the ASCII digits of [s] as Persian ones, leaving everything else untouched. */
+    fun persianDigits(s: String): String {
+        if (s.none { it in '0'..'9' }) return s
+        val out = StringBuilder(s.length)
+        for (c in s) out.append(if (c in '0'..'9') FA_DIGITS[c - '0'] else c)
+        return out.toString()
     }
 
     val PERSIAN_LOCALE: Locale get() = Locale.forLanguageTag("fa-IR")

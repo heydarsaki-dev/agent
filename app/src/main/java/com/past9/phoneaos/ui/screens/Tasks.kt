@@ -98,7 +98,7 @@ private fun GoalCard(g: GoalRow, tasks: List<TaskRow>, actions: TaskActions) {
     AppCard(padding = PaddingValues(top = 18.dp, bottom = 8.dp)) {
         Row(Modifier.padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(trArgs("GOAL · %1\$s/%2\$s DONE", "$done", "${tasks.size}"), style = Eyebrow, color = MaterialTheme.colorScheme.primary)
+                Text(trArgs("GOAL · %1\$s/%2\$s DONE", done, tasks.size), style = Eyebrow, color = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.height(4.dp))
                 Text(g.title, style = MaterialTheme.typography.titleLarge)
                 if (g.why.isNotBlank()) Text(g.why, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

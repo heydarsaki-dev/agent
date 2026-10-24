@@ -219,9 +219,9 @@ fun relativeTime(ms: Long, now: Long = System.currentTimeMillis(), language: Str
     val d = (now - ms) / 1000
     return when {
         d < 60 -> com.past9.phoneaos.ui.i18n.I18n.tr("just now", language)
-        d < 3600 -> com.past9.phoneaos.ui.i18n.I18n.trArgs("%1\$s min ago", language, "${d / 60}")
-        d < 86400 -> com.past9.phoneaos.ui.i18n.I18n.trArgs("%1\$s h ago", language, "${d / 3600}")
-        d < 7 * 86400 -> com.past9.phoneaos.ui.i18n.I18n.trArgs("%1\$s d ago", language, "${d / 86400}")
+        d < 3600 -> com.past9.phoneaos.ui.i18n.I18n.trArgs("%1\$s min ago", language, d / 60)
+        d < 86400 -> com.past9.phoneaos.ui.i18n.I18n.trArgs("%1\$s h ago", language, d / 3600)
+        d < 7 * 86400 -> com.past9.phoneaos.ui.i18n.I18n.trArgs("%1\$s d ago", language, d / 86400)
         else -> java.time.Instant.ofEpochMilli(ms).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("d MMM"))
     }
 }

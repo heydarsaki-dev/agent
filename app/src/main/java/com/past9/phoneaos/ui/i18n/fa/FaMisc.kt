@@ -1,6 +1,15 @@
 package com.past9.phoneaos.ui.i18n.fa
 
 internal val faMisc: Map<String, String> = mapOf(
+    "Send to %1\$s" to "ارسال به %1\$s",
+    "Signed in as %1\$s" to "ورود با حساب %1\$s",
+    "Sign out" to "خروج از حساب",
+    "Your sync service address (https://…)" to "آدرس سرویس همگام‌سازی شما (https://…)",
+    "Email" to "ایمیل",
+    "Create the account on my service" to "ساخت حساب در سرویس من",
+    "Signing in…" to "در حال ورود…",
+    "Sign in" to "ورود",
+    "Jobs you hand to your own computers report back through a sync service that you run. Nothing goes through anyone else, and nothing runs on your phone while the app is closed: results wait there and show up when you open the app." to "کارهایی که به رایانه‌های خودتان می‌سپارید، از طریق سرویس همگام‌سازی‌ای که خودتان می‌گردانید گزارش می‌دهند. هیچ داده‌ای از دست کسی دیگر نمی‌رود و تا وقتی برنامه بسته است هیچ چیز روی گوشی شما اجرا نمی‌شود: نتایج همان‌جا منتظر می‌مانند و وقتی برنامه را باز کنید نمایش داده می‌شوند.",
     // ShareActivity.kt
     "Finish setting up your agent first, then share again." to "اول راه‌اندازی دستیارتان را کامل کنید، بعد دوباره به اشتراک بگذارید.",
     "Open the app" to "باز کردن اپ",

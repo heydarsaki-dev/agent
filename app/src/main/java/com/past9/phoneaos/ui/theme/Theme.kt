@@ -11,8 +11,11 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
+import com.past9.phoneaos.R
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -52,19 +55,61 @@ private val Dark = darkColorScheme(
     inverseSurface = Color(0xFFE9E7EE), inverseOnSurface = Color(0xFF302F35), inversePrimary = Color(0xFF4A3FD1),
 )
 
-private val base = Typography()
-val AppType = Typography(
-    displayLarge = base.displayLarge, displayMedium = base.displayMedium.copy(fontWeight = FontWeight.Medium, letterSpacing = (-0.5).sp),
-    displaySmall = base.displaySmall.copy(fontWeight = FontWeight.Medium, letterSpacing = (-0.25).sp),
-    headlineLarge = base.headlineLarge.copy(fontWeight = FontWeight.Medium), headlineMedium = base.headlineMedium.copy(fontWeight = FontWeight.Medium),
-    headlineSmall = base.headlineSmall.copy(fontWeight = FontWeight.Medium),
-    titleLarge = base.titleLarge.copy(fontWeight = FontWeight.Medium), titleMedium = base.titleMedium.copy(fontWeight = FontWeight.SemiBold), titleSmall = base.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-    bodyLarge = base.bodyLarge.copy(lineHeight = 25.sp), bodyMedium = base.bodyMedium, bodySmall = base.bodySmall,
-    labelLarge = base.labelLarge.copy(fontWeight = FontWeight.SemiBold), labelMedium = base.labelMedium.copy(fontWeight = FontWeight.SemiBold), labelSmall = base.labelSmall,
+/** IranSansX, the app's Persian typeface, in the five weights the UI asks for. */
+val Sans = FontFamily(
+    Font(R.font.iransansx_light, FontWeight.Light),
+    Font(R.font.iransansx_regular, FontWeight.Normal),
+    Font(R.font.iransansx_medium, FontWeight.Medium),
+    Font(R.font.iransansx_demibold, FontWeight.SemiBold),
+    Font(R.font.iransansx_bold, FontWeight.Bold),
 )
 
+// IranSansX's Persian forms run noticeably larger than the default Latin font at the
+// same sp: its ascender-to-descender span and x-height are taller and its glyphs sit
+// wider on the line, which inflated every screen. So Material's point-based scale is
+// pulled back to the factors below, which keeps line breaks and card paddings where
+// they were designed.
+private const val FaSize = 0.88f
+private const val FaLine = 0.92f
+
+private fun px(base: Float) = (base * FaSize).sp
+private fun lh(base: Float) = (base * FaLine).sp
+
+private val base = Typography()
+val AppType = Typography(
+    displayLarge = base.displayLarge.copy(fontSize = px(57f), lineHeight = lh(64f)),
+    displayMedium = base.displayMedium.copy(fontSize = px(45f), lineHeight = lh(52f), fontWeight = FontWeight.Medium, letterSpacing = (-0.5).sp),
+    displaySmall = base.displaySmall.copy(fontSize = px(36f), lineHeight = lh(44f), fontWeight = FontWeight.Medium, letterSpacing = (-0.25).sp),
+    headlineLarge = base.headlineLarge.copy(fontSize = px(32f), lineHeight = lh(40f), fontWeight = FontWeight.Medium),
+    headlineMedium = base.headlineMedium.copy(fontSize = px(28f), lineHeight = lh(36f), fontWeight = FontWeight.Medium),
+    headlineSmall = base.headlineSmall.copy(fontSize = px(24f), lineHeight = lh(32f), fontWeight = FontWeight.Medium),
+    titleLarge = base.titleLarge.copy(fontSize = px(22f), lineHeight = lh(28f), fontWeight = FontWeight.Medium),
+    titleMedium = base.titleMedium.copy(fontSize = px(16f), lineHeight = lh(24f), fontWeight = FontWeight.SemiBold),
+    titleSmall = base.titleSmall.copy(fontSize = px(14f), lineHeight = lh(20f), fontWeight = FontWeight.SemiBold),
+    bodyLarge = base.bodyLarge.copy(fontSize = px(16f), lineHeight = lh(24f)),
+    bodyMedium = base.bodyMedium.copy(fontSize = px(14f), lineHeight = lh(20f)),
+    bodySmall = base.bodySmall.copy(fontSize = px(12f), lineHeight = lh(16f)),
+    labelLarge = base.labelLarge.copy(fontSize = px(14f), lineHeight = lh(20f), fontWeight = FontWeight.SemiBold),
+    labelMedium = base.labelMedium.copy(fontSize = px(12f), lineHeight = lh(16f), fontWeight = FontWeight.SemiBold),
+    labelSmall = base.labelSmall.copy(fontSize = px(11f), lineHeight = lh(16f)),
+).let { t ->
+    // Put the family on every slot, including the ones this list doesn't name.
+    Typography(
+        displayLarge = t.displayLarge.copy(fontFamily = Sans), displayMedium = t.displayMedium.copy(fontFamily = Sans),
+        displaySmall = t.displaySmall.copy(fontFamily = Sans),
+        headlineLarge = t.headlineLarge.copy(fontFamily = Sans), headlineMedium = t.headlineMedium.copy(fontFamily = Sans),
+        headlineSmall = t.headlineSmall.copy(fontFamily = Sans),
+        titleLarge = t.titleLarge.copy(fontFamily = Sans), titleMedium = t.titleMedium.copy(fontFamily = Sans),
+        titleSmall = t.titleSmall.copy(fontFamily = Sans),
+        bodyLarge = t.bodyLarge.copy(fontFamily = Sans), bodyMedium = t.bodyMedium.copy(fontFamily = Sans),
+        bodySmall = t.bodySmall.copy(fontFamily = Sans),
+        labelLarge = t.labelLarge.copy(fontFamily = Sans), labelMedium = t.labelMedium.copy(fontFamily = Sans),
+        labelSmall = t.labelSmall.copy(fontFamily = Sans),
+    )
+}
+
 /** Eyebrow: the small label over each section. 11sp min, uppercase, tracked out. */
-val Eyebrow = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp, lineHeight = 16.sp)
+val Eyebrow = TextStyle(fontFamily = Sans, fontSize = px(11f), fontWeight = FontWeight.Bold, letterSpacing = 1.0.sp, lineHeight = lh(16f))
 
 val AppShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp), small = RoundedCornerShape(12.dp), medium = RoundedCornerShape(20.dp),
