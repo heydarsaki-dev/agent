@@ -15,6 +15,7 @@ import com.past9.phoneaos.browser.SiteAdapt
 import com.past9.phoneaos.browser.SiteCatalog
 import com.past9.phoneaos.browser.SiteHealth
 import com.past9.phoneaos.App
+import com.past9.phoneaos.ui.i18n.I18n
 import org.json.JSONObject
 
 /** The browser tools share one engine; they start the background service on first use. */
@@ -37,11 +38,11 @@ class BrowserOpenTool(c: Context) : BrowserTool(c) {
     override suspend fun run(input: JSONObject, ctx: ToolContext): String {
         val url = input.optString("url")
         input.optString("profile").takeIf { it.isNotBlank() }?.let { want -> profiles().firstOrNull { it.equals(want, true) }?.let { lastProfile[ctx.agentLabel] = it } }
-        val id = ctx.activity("Browsing $url", JSONObject().put("tool", "browser"))
+        val id = ctx.activity(I18n.trArgs("Browsing %1\$s", uiLang(context), url), JSONObject().put("tool", "browser"))
         val e = engine(ctx)
         val opened = SiteAdapt.open(e.port, SiteCatalog(App.graph(context).settings), url, if (input.has("desktop")) input.optBoolean("desktop") else null)
         val p = e.page.value
-        ctx.updateActivity(id, (if (opened.verdict.ok) "Opened " else "Refused: ") + p.title.ifBlank { p.url }, JSONObject().put("tool", "browser").put("url", p.url))
+        ctx.updateActivity(id, if (opened.verdict.ok) I18n.trArgs("Opened %1\$s", uiLang(context), p.title.ifBlank { p.url }) else I18n.trArgs("Refused: %1\$s", uiLang(context), p.title.ifBlank { p.url }), JSONObject().put("tool", "browser").put("url", p.url))
         return opened.notes + e.snapshot()
     }
 }
@@ -52,7 +53,7 @@ class SiteProbeTool(c: Context) : BrowserTool(c) {
         schema(listOf("url"), "url" to str("URL or domain")))
     override suspend fun run(input: JSONObject, ctx: ToolContext): String {
         val url = input.optString("url").trim().ifEmpty { return "No URL." }
-        val id = ctx.activity("Checking how $url behaves", JSONObject().put("tool", "browser"))
+        val id = ctx.activity(I18n.trArgs("Checking how %1\$s behaves", uiLang(context), url), JSONObject().put("tool", "browser"))
         val e = engine(ctx); val catalog = SiteCatalog(App.graph(context).settings)
         val before = e.desktop
         val results = listOf(false, true).map { desktop ->
@@ -95,7 +96,7 @@ class BrowserClickTool(c: Context) : BrowserTool(c) {
     override suspend fun run(input: JSONObject, ctx: ToolContext): String {
         val e = engine(ctx)
         val r = e.click(input.optString("ref").ifBlank { null }, input.optString("selector").ifBlank { null }, input.optString("text").ifBlank { null })
-        ctx.activity("Clicked ${input.optString("text").ifBlank { r.removePrefix("clicked ") }.take(50)}", JSONObject().put("tool", "browser"))
+        ctx.activity(I18n.trArgs("Clicked %1\$s", uiLang(context), input.optString("text").ifBlank { r.removePrefix("clicked ") }.take(50)), JSONObject().put("tool", "browser"))
         return r + "\n\n" + e.snapshot(8_000)
     }
 }
@@ -160,7 +161,7 @@ class BrowserHandoffTool(c: Context) : BrowserTool(c) {
     override suspend fun run(input: JSONObject, ctx: ToolContext): String {
         engine(ctx)
         // No notification of its own: a helper's handoff reaches the user only if the main agent forwards it (and that notifies).
-        val a = ctx.ask("${input.optString("reason")} Open the browser, do it, then tap Done.", listOf("Open browser", "Done", "Skip"))
+        val a = ctx.ask(I18n.trArgs("%1\$s Open the browser, do it, then tap Done.", uiLang(context), input.optString("reason")), listOf("Open browser", "Done", "Skip"))
         return when (a) { null -> "No one is around to help right now."; "Skip" -> "The user skipped it."; AskOptions.NO -> AskOptions.TURNED_DOWN; else -> "The user says they are done. Read the page to check." }
     }
 }
@@ -178,7 +179,7 @@ class BrowserUploadTool(c: Context) : BrowserTool(c) {
         e.pendingUpload = listOf(android.net.Uri.fromFile(f))
         val ref = input.optString("ref").ifBlank { null }; val sel = input.optString("selector").ifBlank { null }; val txt = input.optString("text").ifBlank { null }
         e.click(ref, sel ?: if (ref == null && txt == null) "input[type=file]" else null, txt)
-        repeat(20) { if (e.uploadsServed > before) return "Uploaded ${f.name} (${f.length() / 1024} KB). Read the page to confirm it was accepted.".also { ctx.activity("Uploaded ${f.name}", JSONObject().put("tool", "browser")) }; kotlinx.coroutines.delay(200) }
+        repeat(20) { if (e.uploadsServed > before) return "Uploaded ${f.name} (${f.length() / 1024} KB). Read the page to confirm it was accepted.".also { ctx.activity(I18n.trArgs("Uploaded %1\$s", uiLang(context), f.name), JSONObject().put("tool", "browser")) }; kotlinx.coroutines.delay(200) }
         e.pendingUpload = null
         return "That click didn't open a file picker. Find the real upload button or the input[type=file] in the outline and try again."
     }
@@ -195,7 +196,7 @@ class BrowserEvalTool(c: Context) : BrowserTool(c) {
         val args = runCatching { JSONObject(input.optString("args").ifBlank { "{}" }) }.getOrElse { return "args must be a JSON object." }
         val e = engine(ctx)
         val out = com.past9.phoneaos.connections.WebApps.result(e.runAsync(input.optString("js"), args))
-        ctx.activity("Ran a script on ${e.page.value.url.substringAfter("//").substringBefore('/')}", JSONObject().put("tool", "browser"))
+        ctx.activity(I18n.trArgs("Ran a script on %1\$s", uiLang(context), e.page.value.url.substringAfter("//").substringBefore('/')), JSONObject().put("tool", "browser"))
         return out
     }
 }

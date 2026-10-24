@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.TextSnippet
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.GraphicEq
@@ -58,6 +59,10 @@ import com.past9.phoneaos.App
 import com.past9.phoneaos.MainActivity
 import com.past9.phoneaos.data.ChatItem
 import com.past9.phoneaos.ui.AgentAvatar
+import com.past9.phoneaos.ui.i18n.I18n
+import com.past9.phoneaos.ui.i18n.tr
+import com.past9.phoneaos.ui.i18n.trAny
+import com.past9.phoneaos.ui.i18n.trArgs
 import com.past9.phoneaos.ui.theme.AppTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -65,6 +70,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+
+import com.past9.phoneaos.ui.i18n.withAppLanguage
 
 /**
  * The share sheet: a light, see-through screen over the app the user shared from. It copies what was shared
@@ -84,6 +91,11 @@ class ShareActivity : ComponentActivity() {
 
     private enum class Phase { EDIT, SENDING, SENT }
 
+    /** Persian is the app's default language: this sheet follows it (and its RTL layout) too. */
+    override fun attachBaseContext(base: android.content.Context) {
+        super.attachBaseContext(base.withAppLanguage())
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -92,7 +104,7 @@ class ShareActivity : ComponentActivity() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         val accent = prefs.getString("accent", "iris") ?: "iris"
         val mascot = prefs.getString("mascot", "scout") ?: "scout"
-        val name = prefs.getString("agentName", null)?.takeIf { it.isNotBlank() } ?: "your agent"
+        val name = prefs.getString("agentName", null)?.takeIf { it.isNotBlank() } ?: trAny("your agent", I18n.language(this))
         val onboarded = prefs.getBoolean("onboarded", false)
         val stamp = System.currentTimeMillis()
         // Copy off the main thread, starting now; the sheet is already on screen while this runs.
@@ -104,8 +116,10 @@ class ShareActivity : ComponentActivity() {
             withContext(Dispatchers.Main) { copying = false }
         }
         setContent {
-            AppTheme(accent = accent, mascot = mascot) {
-                Sheet(name = name, onboarded = onboarded)
+            androidx.compose.runtime.CompositionLocalProvider(com.past9.phoneaos.ui.i18n.LocalLanguage provides com.past9.phoneaos.ui.i18n.I18n.language(this)) {
+                AppTheme(accent = accent, mascot = mascot) {
+                    Sheet(name = name, onboarded = onboarded)
+                }
             }
         }
     }
@@ -128,6 +142,9 @@ class ShareActivity : ComponentActivity() {
         }.onFailure { stopPlayback() }
     }
 
+    /** Translate a string that needs to be read outside a composable. */
+    private fun t(s: String): String = trAny(s, I18n.language(this))
+
     private fun send(note: String) {
         if (phase != Phase.EDIT) return
         phase = Phase.SENDING; problem = null
@@ -139,7 +156,7 @@ class ShareActivity : ComponentActivity() {
                 val files = items.filter { it.kind != ShareKind.IMAGE }.map { it.asFile() }
                 val images = items.filter { it.kind == ShareKind.IMAGE }.map { it.path }
                 if (files.isEmpty() && images.isEmpty() && input.text.isNullOrBlank() && note.isBlank()) {
-                    phase = Phase.EDIT; problem = "Nothing could be read from what you shared."; return@launch
+                    phase = Phase.EDIT; problem = t("Nothing could be read from what you shared."); return@launch
                 }
                 val msg = ShareLogic.compose(note, input.text, input.subject, files, images, metered)
                 val g = withContext(Dispatchers.Default) { App.graph(this@ShareActivity) }
@@ -148,7 +165,7 @@ class ShareActivity : ComponentActivity() {
                 // Wait (briefly) until the message is really stored, so it can't be lost when this screen closes.
                 var tries = 0
                 while (tries++ < 40 && g.db.chat().userSince(since) == 0) delay(75)
-            }.onFailure { phase = Phase.EDIT; problem = "That did not send. Try again."; return@launch }
+            }.onFailure { phase = Phase.EDIT; problem = t("That did not send. Try again."); return@launch }
             phase = Phase.SENT
             delay(850)
             finish()
@@ -200,23 +217,23 @@ class ShareActivity : ComponentActivity() {
                                 Preview()
                                 Spacer(Modifier.height(16.dp))
                                 if (!onboarded) {
-                                    Text("Finish setting up your agent first, then share again.", style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
+                                    Text(tr("Finish setting up your agent first, then share again."), style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
                                     Spacer(Modifier.height(12.dp))
-                                    Button({ startActivity(Intent(this@ShareActivity, MainActivity::class.java)); finish() }, Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Open the app") }
+                                    Button({ startActivity(Intent(this@ShareActivity, MainActivity::class.java)); finish() }, Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(tr("Open the app")) }
                                 } else {
                                     AnimatedVisibility(noteOpen) {
                                         OutlinedTextField(note, { note = it }, Modifier.fillMaxWidth().padding(bottom = 12.dp).focusRequester(focus),
-                                            placeholder = { Text("Add a message") }, minLines = 1, maxLines = 5, shape = RoundedCornerShape(20.dp),
+                                            placeholder = { Text(tr("Add a message")) }, minLines = 1, maxLines = 5, shape = RoundedCornerShape(20.dp),
                                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences), enabled = phase == Phase.EDIT)
                                     }
                                     problem?.let { Text(it, color = cs.error, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 8.dp)) }
                                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                        if (!noteOpen) OutlinedButton({ noteOpen = true }, Modifier.weight(1f).heightIn(min = 52.dp), enabled = phase == Phase.EDIT) { Text("Add a message") }
+                                        if (!noteOpen) OutlinedButton({ noteOpen = true }, Modifier.weight(1f).heightIn(min = 52.dp), enabled = phase == Phase.EDIT) { Text(tr("Add a message")) }
                                         Button({ send(note) }, Modifier.weight(1f).heightIn(min = 52.dp), enabled = phase == Phase.EDIT) {
-                                            if (phase == Phase.SENDING) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = cs.onSurfaceVariant) else Text("Send")
+                                            if (phase == Phase.SENDING) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = cs.onSurfaceVariant) else Text(tr("Send"))
                                         }
                                     }
-                                    if (copying && items.isNotEmpty()) Text("Still getting a file ready. It sends as soon as it is.", style = MaterialTheme.typography.labelMedium,
+                                    if (copying && items.isNotEmpty()) Text(tr("Still getting a file ready. It sends as soon as it is."), style = MaterialTheme.typography.labelMedium,
                                         color = cs.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
                                 }
                             }
@@ -232,9 +249,9 @@ class ShareActivity : ComponentActivity() {
         val links = ShareLogic.links(input.text)
         return when {
             kinds.isNotEmpty() -> kinds.groupBy { it }.entries.joinToString(", ") { (k, v) -> if (v.size == 1) ShareLogic.label(k).replaceFirstChar { it.uppercase() } else "${v.size} ${ShareLogic.label(k, true)}" }
-            copying && input.streams.isNotEmpty() -> "Getting it ready"
+            copying && input.streams.isNotEmpty() -> t("Getting it ready")
             links.isNotEmpty() -> ShareLogic.label(ShareKind.LINK).replaceFirstChar { it.uppercase() }
-            else -> "Some text"
+            else -> t("Some text")
         }
     }
 
@@ -244,7 +261,7 @@ class ShareActivity : ComponentActivity() {
         Row(Modifier.fillMaxWidth().padding(vertical = 18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
             Box(Modifier.size(44.dp).clip(CircleShape).background(cs.primaryContainer), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Check, null, tint = cs.onPrimaryContainer) }
             Spacer(Modifier.width(12.dp))
-            Text("Sent to $name", style = MaterialTheme.typography.titleLarge, color = cs.onSurface)
+            Text(trArgs("Sent to %1\$s", name), style = MaterialTheme.typography.titleLarge, color = cs.onSurface)
         }
     }
 
@@ -259,7 +276,7 @@ class ShareActivity : ComponentActivity() {
             if (links.isNotEmpty()) links.take(2).forEach { LinkCard(it, input.subject) }
             else if (text.isNotEmpty()) Surface(shape = RoundedCornerShape(20.dp), color = cs.surfaceContainerHigh) {
                 Row(Modifier.padding(14.dp), verticalAlignment = Alignment.Top) {
-                    Icon(Icons.Rounded.TextSnippet, null, tint = cs.primary); Spacer(Modifier.width(12.dp))
+                    Icon(Icons.AutoMirrored.Rounded.TextSnippet, null, tint = cs.primary); Spacer(Modifier.width(12.dp))
                     Text(text, maxLines = 5, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium, color = cs.onSurface)
                 }
             }
@@ -272,7 +289,7 @@ class ShareActivity : ComponentActivity() {
                 }
             }
             if (copying && items.isEmpty() && input.streams.isNotEmpty()) LinearProgressIndicator(Modifier.fillMaxWidth().clip(CircleShape))
-            if (failed > 0) Text(if (failed == 1) "One item could not be read." else "$failed items could not be read.", style = MaterialTheme.typography.labelMedium, color = cs.error)
+            if (failed > 0) Text(if (failed == 1) tr("One item could not be read.") else trArgs("%1\$s items could not be read.", failed), style = MaterialTheme.typography.labelMedium, color = cs.error)
         }
     }
 
@@ -329,7 +346,7 @@ class ShareActivity : ComponentActivity() {
         val playing = playingPath == p.path
         Surface(shape = RoundedCornerShape(20.dp), color = cs.surfaceContainerHigh) {
             Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                FilledIconButton({ togglePlay(p.path) }, Modifier.size(48.dp)) { Icon(if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (playing) "Pause" else "Play") }
+                FilledIconButton({ togglePlay(p.path) }, Modifier.size(48.dp)) { Icon(if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (playing) tr("Pause") else tr("Play")) }
                 Spacer(Modifier.width(12.dp))
                 val phase by rememberInfinitePhase(playing)
                 Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {

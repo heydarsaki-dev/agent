@@ -18,6 +18,8 @@ import com.past9.phoneaos.data.NotificationRow
 import com.past9.phoneaos.ui.AppCard
 import com.past9.phoneaos.ui.SectionHeader
 import com.past9.phoneaos.ui.SubScreen
+import com.past9.phoneaos.ui.i18n.LocalLanguage
+import com.past9.phoneaos.ui.i18n.tr
 import com.past9.phoneaos.ui.relativeTime
 
 data class PhoneApp(val pkg: String, val label: String, val icon: ImageBitmap?)
@@ -32,28 +34,28 @@ data class NotificationsActions(
 @Composable
 fun NotificationsScreen(access: Boolean, apps: List<PhoneApp>, allowed: Set<String>, recent: List<NotificationRow>, actions: NotificationsActions) {
     var query by remember { mutableStateOf("") }
-    SubScreen("Notifications", "${allowed.size} app${if (allowed.size == 1) "" else "s"} your agent can read", actions.onBack) { pad ->
+    SubScreen(tr("Notifications"), "${allowed.size} app${if (allowed.size == 1) "" else "s"} your agent can read", actions.onBack) { pad ->
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(start = com.past9.phoneaos.ui.sidePad(16.dp), end = com.past9.phoneaos.ui.sidePad(16.dp), bottom = 48.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item {
-                Text("Your agent learns a lot from your notifications: bank alerts, deliveries, messages. It only reads the apps you switch on here, and keeps a week of them on this phone.",
+                Text(tr("Your agent learns a lot from your notifications: bank alerts, deliveries, messages. It only reads the apps you switch on here, and keeps a week of them on this phone."),
                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(4.dp))
             }
             if (!access) item {
                 AppCard(container = MaterialTheme.colorScheme.tertiaryContainer) {
-                    Text("NOTIFICATION ACCESS IS OFF", style = com.past9.phoneaos.ui.theme.Eyebrow, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                    Text(tr("NOTIFICATION ACCESS IS OFF"), style = com.past9.phoneaos.ui.theme.Eyebrow, color = MaterialTheme.colorScheme.onTertiaryContainer)
                     Spacer(Modifier.height(6.dp))
-                    Text("Turn it on for this app in Android settings. If Android says it's a restricted setting, open this app's info, tap the ⋮ menu, then Allow restricted settings.", color = MaterialTheme.colorScheme.onTertiaryContainer, style = MaterialTheme.typography.bodyMedium)
+                    Text(tr("Turn it on for this app in Android settings. If Android says it's a restricted setting, open this app's info, tap the ⋮ menu, then Allow restricted settings."), color = MaterialTheme.colorScheme.onTertiaryContainer, style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.height(12.dp))
-                    Button(onClick = actions.onGrantAccess, shapes = ButtonDefaults.shapes()) { Text("Open settings") }
+                    Button(onClick = actions.onGrantAccess, shapes = ButtonDefaults.shapes()) { Text(tr("Open settings")) }
                 }
             }
             if (recent.isNotEmpty()) {
-                item { SectionHeader("Lately", "What your agent has seen", Modifier.padding(start = 4.dp, top = 6.dp)) }
+                item { SectionHeader(tr("Lately"), tr("What your agent has seen"), Modifier.padding(start = 4.dp, top = 6.dp)) }
                 item {
                     AppCard(padding = PaddingValues(vertical = 6.dp)) {
                         recent.take(6).forEach { n ->
                             Column(Modifier.padding(horizontal = 18.dp, vertical = 8.dp)) {
-                                Text("${n.app.uppercase()} · ${relativeTime(n.postedAt).uppercase()}", style = com.past9.phoneaos.ui.theme.Eyebrow, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("${n.app.uppercase()} · ${relativeTime(n.postedAt, language = LocalLanguage.current).uppercase()}", style = com.past9.phoneaos.ui.theme.Eyebrow, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(n.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Text(n.text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             }
@@ -61,9 +63,9 @@ fun NotificationsScreen(access: Boolean, apps: List<PhoneApp>, allowed: Set<Stri
                     }
                 }
             }
-            item { SectionHeader("Apps", "Switch on the ones that matter", Modifier.padding(start = 4.dp, top = 6.dp)) }
+            item { SectionHeader(tr("Apps"), tr("Switch on the ones that matter"), Modifier.padding(start = 4.dp, top = 6.dp)) }
             item {
-                OutlinedTextField(query, { query = it }, placeholder = { Text("Search apps") }, leadingIcon = { Icon(Icons.Rounded.Search, null) }, singleLine = true,
+                OutlinedTextField(query, { query = it }, placeholder = { Text(tr("Search apps")) }, leadingIcon = { Icon(Icons.Rounded.Search, null) }, singleLine = true,
                     modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge)
             }
             val shown = apps.filter { query.isBlank() || it.label.contains(query, true) }.sortedWith(compareBy({ it.pkg !in allowed }, { it.label.lowercase() }))

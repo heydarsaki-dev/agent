@@ -34,6 +34,8 @@ class Dictation(
     private val vocabulary: List<String> = emptyList(),
     private val onText: (String) -> Unit,
     private val onEnd: (error: String?) -> Unit,
+    /** BCP-47 codes the model may hear. Persian (fa-IR) while the app speaks Persian. */
+    private val languageCodes: List<String> = listOf("en-ZA", "zu-ZA"),
 ) {
     private val http = OkHttpClient.Builder().readTimeout(0, TimeUnit.MILLISECONDS).pingInterval(20, TimeUnit.SECONDS).build()
     private var ws: WebSocket? = null
@@ -80,8 +82,8 @@ class Dictation(
     private fun setup(): JSONObject {
         val tr = JSONObject()
         if (hints) {
-            // English as spoken here, with isiZulu mixed through it. Both are listed so the model does not have to guess one.
-            tr.put("languageCodes", JSONArray().put("en-ZA").put("zu-ZA"))
+            // What the caller says it may hear (Persian for a Persian app), so the model does not have to guess one.
+            if (languageCodes.isNotEmpty()) tr.put("languageCodes", JSONArray(languageCodes))
             if (vocabulary.isNotEmpty()) tr.put("customVocabulary", JSONArray(vocabulary.take(100)))
         } else tr.put("languageCodes", JSONArray())
         return JSONObject().put("setup", JSONObject()

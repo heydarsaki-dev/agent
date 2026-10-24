@@ -70,6 +70,8 @@ data class AgentSettings(
     val subHelperModel: String = "",
     /** The models helpers can run on for the current power (API provider or subscription), each tagged with what it's good for. Empty = just the one helper model. */
     val helperRoster: List<HelperModel> = emptyList(),
+    /** UI language. Persian by default; "en" switches the app back to English. */
+    val language: String = "fa",
     /** Voice: who speaks the agent's replies and voice notes (system | gemini | openai | elevenlabs). */
     val ttsProvider: String = "system",
     val ttsVoice: String = "",
@@ -133,6 +135,7 @@ class SettingsStore(context: Context) {
             browserProfiles = (prefs.getString("browserProfiles", null) ?: "Personal").split("\n").filter { it.isNotBlank() }.ifEmpty { listOf("Personal") },
             subKind = runCatching { SubKind.valueOf(prefs.getString("subKind", "CLAUDE")!!) }.getOrDefault(SubKind.CLAUDE),
             helperRoster = HelperModel.listFrom(prefs.getString(rosterKey(), null)),
+            language = prefs.getString("language", "fa")?.takeIf { it == "en" || it == "fa" } ?: "fa",
         )
     }
 
@@ -180,6 +183,8 @@ class SettingsStore(context: Context) {
     fun setUserName(name: String) = edit { putString("userName", name.trim()) }
     fun setAgentName(name: String) = edit { putString("agentName", name.trim()) }
     fun setSpeakReplies(on: Boolean) = edit { putBoolean("speakReplies", on) }
+    /** "fa" (Persian, RTL) or "en". Persian is the default. */
+    fun setLanguage(lang: String) = edit { putString("language", if (lang == "en") "en" else "fa") }
 
     fun apiKey(p: Provider = _state.value.provider): String? = secrets.getString("key_${p.name}", null)
     fun setApiKey(p: Provider, key: String) { secrets.edit().putString("key_${p.name}", key.trim()).apply(); _state.value = read() }

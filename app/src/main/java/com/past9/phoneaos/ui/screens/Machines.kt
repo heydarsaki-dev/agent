@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.AltRoute
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,6 +29,8 @@ import com.past9.phoneaos.ui.ChoiceCard
 import com.past9.phoneaos.ui.ChoiceChips
 import com.past9.phoneaos.ui.SheetField
 import com.past9.phoneaos.ui.StatusPill
+import com.past9.phoneaos.ui.i18n.trArgs
+import com.past9.phoneaos.ui.i18n.tr
 import com.past9.phoneaos.ui.theme.Eyebrow
 import com.past9.phoneaos.ui.theme.LocalExtra
 import kotlinx.coroutines.launch
@@ -58,8 +61,8 @@ fun MachinesLine(machines: List<Machine>, onClick: () -> Unit) {
         Icon(Icons.Rounded.Dns, null, tint = cs.primary)
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
-            Text("Machines", style = MaterialTheme.typography.titleSmall)
-            Text(if (machines.isEmpty()) "Hand heavy work to your servers and computers" else machines.joinToString(" · ") { it.name },
+            Text(tr("Machines"), style = MaterialTheme.typography.titleSmall)
+            Text(if (machines.isEmpty()) tr("Hand heavy work to your servers and computers") else machines.joinToString(" · ") { it.name },
                 style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         if (machines.isNotEmpty()) {
@@ -83,22 +86,22 @@ fun MachinesSheet(machines: List<Machine>, actions: MachineActions, onDismiss: (
         if (!checkOnOpen) return@LaunchedEffect
         machines.filter { checked[it.id] != true }.forEach { m -> checked[m.id] = true; status[m.id] = null; launch { status[m.id] = actions.onTest(m) ?: "" } }
     }
-    AppSheet(Icons.Rounded.Dns, "Heavy lifting", "Your machines", onDismiss, primary = "Add a machine", primaryEnabled = true, onPrimary = { onOpen(null) },
+    AppSheet(Icons.Rounded.Dns, tr("Heavy lifting"), tr("Your machines"), onDismiss, primary = tr("Add a machine"), primaryEnabled = true, onPrimary = { onOpen(null) },
         shape = androidx.compose.material3.MaterialShapes.Cookie7Sided) {
         if (machines.isEmpty()) {
-            Text("Connect a server or computer you can sign in to. Your agent sends it the work your phone shouldn't do: building a site, crunching data, long scripts.",
+            Text(tr("Connect a server or computer you can sign in to. Your agent sends it the work your phone shouldn't do: building a site, crunching data, long scripts."),
                 style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(20.dp))
-            Hint(Icons.Rounded.Cloud, "A server you rent", "A VPS from any provider")
-            Hint(Icons.Rounded.School, "A uni or work server", "Through its login server if it has one")
-            Hint(Icons.Rounded.Computer, "Your own computer", "Over Tailscale or your home network")
+            Hint(Icons.Rounded.Cloud, tr("A server you rent"), tr("A VPS from any provider"))
+            Hint(Icons.Rounded.School, tr("A uni or work server"), tr("Through its login server if it has one"))
+            Hint(Icons.Rounded.Computer, tr("Your own computer"), tr("Over Tailscale or your home network"))
         } else Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             machines.forEach { m -> MachineTile(m, status[m.id], checked[m.id] == true || m.id in initialStatus) { onOpen(m.id) } }
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {
                 Icon(Icons.Rounded.Lock, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(8.dp))
-                Text("Your agent only sees the names. Addresses, passwords and keys stay encrypted on this phone.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(tr("Your agent only sees the names. Addresses, passwords and keys stay encrypted on this phone."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -130,16 +133,16 @@ private fun MachineTile(m: Machine, status: String?, checked: Boolean, onClick: 
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(m.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                    if (m.trusted) { Spacer(Modifier.width(6.dp)); Icon(Icons.Rounded.Bolt, "Runs without asking", Modifier.size(16.dp), tint = cs.tertiary) }
+                    if (m.trusted) { Spacer(Modifier.width(6.dp)); Icon(Icons.Rounded.Bolt, tr("Runs without asking"), Modifier.size(16.dp), tint = cs.tertiary) }
                 }
-                Text(m.about.ifBlank { "Not checked yet" }, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(m.about.ifBlank { tr("Not checked yet") }, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Spacer(Modifier.width(8.dp))
             when {
                 !checked -> {}
                 status == null -> LoadingIndicator(Modifier.size(28.dp))
-                status.isEmpty() -> StatusPill("Online", extra.successContainer, extra.success)
-                else -> StatusPill("Can't reach", cs.errorContainer, cs.onErrorContainer)
+                status.isEmpty() -> StatusPill(tr("Online"), extra.successContainer, extra.success)
+                else -> StatusPill(tr("Can't reach"), cs.errorContainer, cs.onErrorContainer)
             }
         }
     }
@@ -187,51 +190,51 @@ fun MachineSheet(existing: Machine?, others: List<Machine>, actions: MachineActi
         busy = false
     }
 
-    AppSheet(if (saved != null) machineIcon(saved!!) else Icons.Rounded.Dns, if (editing) "Machine" else "Heavy lifting", if (editing) existing!!.name else "New machine", onDismiss,
-        primary = when { busy -> "Connecting…"; result == "" -> "Done"; waitingForKey -> "Make a key"; proven -> "Save"; auth == MachineAuth.NEW_KEY && result == null -> "I've added it, connect"; else -> "Connect" },
+    AppSheet(if (saved != null) machineIcon(saved!!) else Icons.Rounded.Dns, if (editing) tr("Machine") else tr("Heavy lifting"), if (editing) existing!!.name else tr("New machine"), onDismiss,
+        primary = when { busy -> tr("Connecting…"); result == "" -> tr("Done"); waitingForKey -> tr("Make a key"); proven -> tr("Save"); auth == MachineAuth.NEW_KEY && result == null -> tr("I've added it, connect"); else -> tr("Connect") },
         primaryEnabled = ready || result == "", onPrimary = { if (result == "") onDone() else connect() },
         shape = androidx.compose.material3.MaterialShapes.Cookie7Sided,
         secondary = if (editing) ({
-            TextButton(onClick = { confirmDelete = true }, modifier = Modifier.fillMaxWidth().height(52.dp).padding(top = 4.dp)) { Text("Remove this machine", color = cs.error) }
+            TextButton(onClick = { confirmDelete = true }, modifier = Modifier.fillMaxWidth().height(52.dp).padding(top = 4.dp)) { Text(tr("Remove this machine"), color = cs.error) }
         }) else null) {
         Column(Modifier.animateContentSize()) {
 
-            SheetField(name, { name = it }, "Name", "Build server", big = true, singleLine = true)
+            SheetField(name, { name = it }, tr("Name"), tr("Build server"), big = true, singleLine = true)
             Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                SheetField(host, { host = it.trim(); result = null }, "Address", "server.example.com", singleLine = true, modifier = Modifier.weight(1f),
+                SheetField(host, { host = it.trim(); result = null }, tr("Address"), "server.example.com", singleLine = true, modifier = Modifier.weight(1f),
                     keyboard = plain.copy(keyboardType = KeyboardType.Uri))
-                SheetField(port, { port = it.filter(Char::isDigit).take(5); result = null }, "Port", "22", singleLine = true, modifier = Modifier.width(92.dp),
+                SheetField(port, { port = it.filter(Char::isDigit).take(5); result = null }, tr("Port"), "22", singleLine = true, modifier = Modifier.width(92.dp),
                     keyboard = plain.copy(keyboardType = KeyboardType.Number))
             }
             Spacer(Modifier.height(16.dp))
-            SheetField(user, { user = it.trim(); result = null }, "Username", "you", singleLine = true, keyboard = plain)
+            SheetField(user, { user = it.trim(); result = null }, tr("Username"), tr("you"), singleLine = true, keyboard = plain)
 
             Spacer(Modifier.height(24.dp))
-            Text("SIGN IN WITH", style = Eyebrow, color = cs.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
+            Text(tr("SIGN IN WITH"), style = Eyebrow, color = cs.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ChoiceCard(Icons.Rounded.Password, "Password", "What you log in with", auth == MachineAuth.PASSWORD, { auth = MachineAuth.PASSWORD; result = null }, Modifier.weight(1f))
-                ChoiceCard(Icons.Rounded.Key, "Your key", "Paste one you use", auth == MachineAuth.KEY, { auth = MachineAuth.KEY; result = null }, Modifier.weight(1f))
-                ChoiceCard(Icons.Rounded.AutoAwesome, "New key", "Made on this phone", auth == MachineAuth.NEW_KEY, { auth = MachineAuth.NEW_KEY; result = null }, Modifier.weight(1f))
+                ChoiceCard(Icons.Rounded.Password, tr("Password"), tr("What you log in with"), auth == MachineAuth.PASSWORD, { auth = MachineAuth.PASSWORD; result = null }, Modifier.weight(1f))
+                ChoiceCard(Icons.Rounded.Key, tr("Your key"), tr("Paste one you use"), auth == MachineAuth.KEY, { auth = MachineAuth.KEY; result = null }, Modifier.weight(1f))
+                ChoiceCard(Icons.Rounded.AutoAwesome, tr("New key"), tr("Made on this phone"), auth == MachineAuth.NEW_KEY, { auth = MachineAuth.NEW_KEY; result = null }, Modifier.weight(1f))
             }
             Spacer(Modifier.height(16.dp))
             when (auth) {
-                MachineAuth.PASSWORD -> SheetField(password, { password = it; result = null }, "Password", if (editing) "Saved. Leave empty to keep it" else "••••••••", singleLine = true, secret = true, keyboard = plain.copy(keyboardType = KeyboardType.Password))
+                MachineAuth.PASSWORD -> SheetField(password, { password = it; result = null }, tr("Password"), if (editing) tr("Saved. Leave empty to keep it") else "••••••••", singleLine = true, secret = true, keyboard = plain.copy(keyboardType = KeyboardType.Password))
                 MachineAuth.KEY -> {
-                    SheetField(key, { key = it; result = null }, "Private key", if (editing) "Saved. Leave empty to keep it" else "-----BEGIN OPENSSH PRIVATE KEY-----", minLines = 3, maxLines = 6, mono = true, keyboard = plain)
+                    SheetField(key, { key = it; result = null }, tr("Private key"), if (editing) tr("Saved. Leave empty to keep it") else "-----BEGIN OPENSSH PRIVATE KEY-----", minLines = 3, maxLines = 6, mono = true, keyboard = plain)
                     Spacer(Modifier.height(12.dp))
-                    SheetField(passphrase, { passphrase = it; result = null }, "Key passphrase, if it has one", "", singleLine = true, secret = true, keyboard = plain.copy(keyboardType = KeyboardType.Password))
+                    SheetField(passphrase, { passphrase = it; result = null }, tr("Key passphrase, if it has one"), "", singleLine = true, secret = true, keyboard = plain.copy(keyboardType = KeyboardType.Password))
                 }
-                MachineAuth.NEW_KEY -> if (pub == null) Text("A key just for this machine. You add its public half to the machine once, and no password is ever stored.",
+                MachineAuth.NEW_KEY -> if (pub == null) Text(tr("A key just for this machine. You add its public half to the machine once, and no password is ever stored."),
                     style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp))
-                    else if (proven && !showKey) TextButton(onClick = { showKey = true }) { Icon(Icons.Rounded.Key, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Show this phone's public key") }
+                    else if (proven && !showKey) TextButton(onClick = { showKey = true }) { Icon(Icons.Rounded.Key, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(tr("Show this phone's public key")) }
                     else if (result != "") PublicKeyCard(pub, actions.onCopy)
             }
 
             val gateways = others.filter { it.id != existing?.id }
             if (gateways.isNotEmpty()) {
                 Spacer(Modifier.height(24.dp))
-                ChoiceChips(listOf(Triple("", "Direct", Icons.Rounded.ArrowOutward)) + gateways.map { Triple(it.id, "Through ${it.name}", Icons.Rounded.AltRoute) }, via ?: "", { via = it.ifBlank { null } }, label = "Reach it")
+                ChoiceChips(listOf(Triple("", tr("Direct"), Icons.Rounded.ArrowOutward)) + gateways.map { Triple(it.id, "Through ${it.name}", Icons.AutoMirrored.Rounded.AltRoute) }, via ?: "", { via = it.ifBlank { null } }, label = tr("Reach it"))
             }
 
             Spacer(Modifier.height(24.dp))
@@ -240,8 +243,8 @@ fun MachineSheet(existing: Machine?, others: List<Machine>, actions: MachineActi
                     Icon(if (trusted) Icons.Rounded.Bolt else Icons.Rounded.VerifiedUser, null, tint = if (trusted) cs.tertiary else cs.primary)
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("Run without asking", style = MaterialTheme.typography.titleSmall)
-                        Text(if (trusted) "Your agent can change anything here on its own." else "Changes wait for your yes. Looking around never asks.", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+                        Text(tr("Run without asking"), style = MaterialTheme.typography.titleSmall)
+                        Text(if (trusted) tr("Your agent can change anything here on its own.") else tr("Changes wait for your yes. Looking around never asks."), style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
                     }
                     Spacer(Modifier.width(12.dp))
                     Switch(trusted, { trusted = it })
@@ -249,15 +252,15 @@ fun MachineSheet(existing: Machine?, others: List<Machine>, actions: MachineActi
             }
             // The outcome sits right above the button that caused it.
             when {
-                result == "" -> { Spacer(Modifier.height(16.dp)); ResultCard(true, "Connected", saved?.let { s -> listOfNotNull(s.about.takeIf { it.isNotBlank() }, s.hostKey?.let { "Identity ${it.take(22)}…" }).joinToString(" · ") } ?: "") }
-                result != null -> { Spacer(Modifier.height(16.dp)); ResultCard(false, "Couldn't connect", result!!) }
+                result == "" -> { Spacer(Modifier.height(16.dp)); ResultCard(true, tr("Connected"), saved?.let { s -> listOfNotNull(s.about.takeIf { it.isNotBlank() }, s.hostKey?.let { "Identity ${it.take(22)}…" }).joinToString(" · ") } ?: "") }
+                result != null -> { Spacer(Modifier.height(16.dp)); ResultCard(false, tr("Couldn't connect"), result!!) }
             }
         }
     }
     if (confirmDelete && existing != null) AlertDialog(onDismissRequest = { confirmDelete = false },
-        title = { Text("Remove ${existing.name}?") }, text = { Text("Your agent loses access, and its saved password or key is deleted from this phone.") },
-        confirmButton = { TextButton(onClick = { confirmDelete = false; actions.onDelete(existing.id) }) { Text("Remove", color = cs.error) } },
-        dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } })
+        title = { Text(trArgs("Remove %1\$s?", existing.name)) }, text = { Text(tr("Your agent loses access, and its saved password or key is deleted from this phone.")) },
+        confirmButton = { TextButton(onClick = { confirmDelete = false; actions.onDelete(existing.id) }) { Text(tr("Remove"), color = cs.error) } },
+        dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(tr("Cancel")) } })
 }
 
 @Composable
@@ -266,16 +269,16 @@ private fun PublicKeyCard(pub: String, onCopy: (String) -> Unit) {
     var copied by remember { mutableStateOf(false) }
     Surface(shape = RoundedCornerShape(24.dp), color = cs.primaryContainer, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(18.dp)) {
-            Text("ONE STEP ON THE MACHINE", style = Eyebrow, color = cs.onPrimaryContainer)
+            Text(tr("ONE STEP ON THE MACHINE"), style = Eyebrow, color = cs.onPrimaryContainer)
             Spacer(Modifier.height(6.dp))
-            Text("Add this line to ~/.ssh/authorized_keys there, or send it to whoever runs it.", style = MaterialTheme.typography.bodyMedium, color = cs.onPrimaryContainer)
+            Text(tr("Add this line to ~/.ssh/authorized_keys there, or send it to whoever runs it."), style = MaterialTheme.typography.bodyMedium, color = cs.onPrimaryContainer)
             Spacer(Modifier.height(12.dp))
             Surface(shape = RoundedCornerShape(16.dp), color = cs.surfaceContainerLowest, modifier = Modifier.fillMaxWidth()) {
                 Text(pub, Modifier.padding(14.dp), style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace), color = cs.onSurface, maxLines = 3, overflow = TextOverflow.Ellipsis)
             }
             Spacer(Modifier.height(12.dp))
             FilledTonalButton(onClick = { onCopy(pub); copied = true }, shapes = ButtonDefaults.shapes()) {
-                Icon(if (copied) Icons.Rounded.Check else Icons.Rounded.ContentCopy, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(if (copied) "Copied" else "Copy public key")
+                Icon(if (copied) Icons.Rounded.Check else Icons.Rounded.ContentCopy, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(if (copied) tr("Copied") else tr("Copy public key"))
             }
         }
     }

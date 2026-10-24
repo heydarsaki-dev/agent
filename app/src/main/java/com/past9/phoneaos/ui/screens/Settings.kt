@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.AddToHomeScreen
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,6 +18,8 @@ import com.past9.phoneaos.data.Provider
 import com.past9.phoneaos.ui.AppCard
 import com.past9.phoneaos.ui.SectionHeader
 import com.past9.phoneaos.ui.SubScreen
+import com.past9.phoneaos.ui.i18n.tr
+import com.past9.phoneaos.ui.i18n.trArgs
 
 data class SettingsActions(
     val onBack: () -> Unit = {},
@@ -53,73 +56,85 @@ fun SettingsScreen(s: AgentSettings, runtime: RuntimeInfo, version: String, acti
     var pickSub by remember { mutableStateOf(false) }
     var voiceSheet by remember { mutableStateOf(false) }
     if (voiceSheet) VoiceSheet(s, actions.voice) { voiceSheet = false }
-    SubScreen("Settings", null, actions.onBack) { pad ->
+    SubScreen(tr("Settings"), null, actions.onBack) { pad ->
         Column(Modifier.padding(pad).verticalScroll(rememberScrollState()).padding(horizontal = com.past9.phoneaos.ui.sidePad(16.dp)).padding(bottom = 48.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            SectionHeader("You", "How your agent knows you", Modifier.padding(start = 4.dp, top = 4.dp))
+            SectionHeader(tr("You"), tr("How your agent knows you"), Modifier.padding(start = 4.dp, top = 4.dp))
             AppCard(padding = PaddingValues(vertical = 4.dp)) {
-                Line(Icons.Rounded.Person, "Your name", s.userName.ifBlank { "Not set" }) { editValue = s.userName; edit = "Your name" to actions.setUserName }
-                Line(Icons.Rounded.Face, "Your agent's name", s.agentName) { editValue = s.agentName; edit = "Your agent's name" to actions.setAgentName }
-                Line(Icons.Rounded.AddToHomeScreen, "Put ${s.agentName} on your home screen", "An icon with ${s.agentName}'s name and face") { actions.onPinHome() }
-                Line(Icons.Rounded.Palette, "Colour and sidekick", "${com.past9.phoneaos.ui.theme.accentOf(s.accent).label} · ${com.past9.phoneaos.ui.mascotOf(s.mascot).label}") { actions.onStyle() }
+                Line(Icons.Rounded.Person, tr("Your name"), s.userName.ifBlank { tr("Not set") }) { editValue = s.userName; edit = "Your name" to actions.setUserName }
+                Line(Icons.Rounded.Face, tr("Your agent's name"), s.agentName) { editValue = s.agentName; edit = "Your agent's name" to actions.setAgentName }
+                Line(Icons.AutoMirrored.Rounded.AddToHomeScreen, "Put ${s.agentName} on your home screen", "An icon with ${s.agentName}'s name and face") { actions.onPinHome() }
+                Line(Icons.Rounded.Palette, tr("Colour and sidekick"), tr(com.past9.phoneaos.ui.theme.accentOf(s.accent).label) + " · " + tr(com.past9.phoneaos.ui.mascotOf(s.mascot).label)) { actions.onStyle() }
+                val langCtx = androidx.compose.ui.platform.LocalContext.current
+                Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Rounded.Language, null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(16.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(tr("Language"), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(s.language != "en", { com.past9.phoneaos.App.graph(langCtx).settings.setLanguage("fa") }, label = { Text("فارسی") })
+                            FilterChip(s.language == "en", { com.past9.phoneaos.App.graph(langCtx).settings.setLanguage("en") }, label = { Text("English") })
+                        }
+                    }
+                }
             }
-            SectionHeader("Power", "What your agent thinks with", Modifier.padding(start = 4.dp, top = 12.dp))
+            SectionHeader(tr("Power"), tr("What your agent thinks with"), Modifier.padding(start = 4.dp, top = 12.dp))
             AppCard(padding = PaddingValues(vertical = 4.dp)) {
-                Line(Icons.Rounded.Key, "API key", if (s.mode == PowerMode.API_KEY) "${s.provider.label}${if (s.hasKey) " · key saved" else " · no key yet"}" else "Not in use",
+                Line(Icons.Rounded.Key, tr("API key"), if (s.mode == PowerMode.API_KEY) tr(s.provider.label) + (if (s.hasKey) tr(" · key saved") else tr(" · no key yet")) else tr("Not in use"),
                     trailing = { RadioButton(s.mode == PowerMode.API_KEY, { actions.setMode(PowerMode.API_KEY) }) }) { actions.setMode(PowerMode.API_KEY) }
-                Line(Icons.Rounded.AutoAwesome, "Subscription", if (s.mode == PowerMode.SUBSCRIPTION) "${s.subKind.label} ${s.subKind.plan} · ${runtime.note}" else "Claude, ChatGPT or OpenCode plan",
+                Line(Icons.Rounded.AutoAwesome, tr("Subscription"), if (s.mode == PowerMode.SUBSCRIPTION) "${s.subKind.label} ${s.subKind.plan} · ${runtime.note}" else tr("Claude, ChatGPT or OpenCode plan"),
                     trailing = { RadioButton(s.mode == PowerMode.SUBSCRIPTION, { pickSub = true }) }) { pickSub = true }
             }
             if (s.mode == PowerMode.API_KEY) AppCard(padding = PaddingValues(vertical = 4.dp)) {
-                Line(Icons.Rounded.Hub, "Provider", s.provider.label) { actions.onChangeKey() }
-                Line(Icons.Rounded.Psychology, "Model", s.model + " · tap to switch") { actions.onModel() }
-                Line(Icons.Rounded.Groups, "Helpers", helpersLine(s.helperRoster, s.helperModel.substringAfterLast('/').ifBlank { "Same as your agent" })) { actions.onHelperModel() }
-                Line(Icons.Rounded.Password, "Change key", "Paste a new key or switch provider") { actions.onChangeKey() }
+                Line(Icons.Rounded.Hub, tr("Provider"), tr(s.provider.label)) { actions.onChangeKey() }
+                Line(Icons.Rounded.Psychology, tr("Model"), s.model + tr(" · tap to switch")) { actions.onModel() }
+                Line(Icons.Rounded.Groups, tr("Helpers"), helpersLine(s.helperRoster, s.helperModel.substringAfterLast('/').ifBlank { tr("Same as your agent") })) { actions.onHelperModel() }
+                Line(Icons.Rounded.Password, tr("Change key"), tr("Paste a new key or switch provider")) { actions.onChangeKey() }
             }
             if (s.mode == PowerMode.SUBSCRIPTION || runtime.installedBytes > 0) AppCard(padding = PaddingValues(vertical = 4.dp)) {
-                Line(Icons.Rounded.Terminal, "${s.subKind.label} runtime", runtime.note) { actions.onClaudeSetup() }
-                if (s.mode == PowerMode.SUBSCRIPTION) Line(Icons.Rounded.Psychology, "Model", s.subModel.ifBlank { "Default" }.replaceFirstChar { it.uppercase() } + " · tap to switch") { actions.onModel() }
-                if (s.mode == PowerMode.SUBSCRIPTION) Line(Icons.Rounded.Groups, "Helpers", helpersLine(s.helperRoster, s.subHelperModel.ifBlank { "Same as your agent" }.replaceFirstChar { it.uppercase() })) { actions.onHelperModel() }
-                if (runtime.installedBytes > 0) Line(Icons.Rounded.DeleteSweep, "Delete runtime data", "Frees ${runtime.installedBytes / 1_000_000} MB. You can set it up again later.") { actions.onDeleteRuntime() }
+                Line(Icons.Rounded.Terminal, trArgs("%1\$s runtime", s.subKind.label), runtime.note) { actions.onClaudeSetup() }
+                if (s.mode == PowerMode.SUBSCRIPTION) Line(Icons.Rounded.Psychology, tr("Model"), s.subModel.ifBlank { tr("Default") }.replaceFirstChar { it.uppercase() } + tr(" · tap to switch")) { actions.onModel() }
+                if (s.mode == PowerMode.SUBSCRIPTION) Line(Icons.Rounded.Groups, tr("Helpers"), helpersLine(s.helperRoster, s.subHelperModel.ifBlank { tr("Same as your agent") }.replaceFirstChar { it.uppercase() })) { actions.onHelperModel() }
+                if (runtime.installedBytes > 0) Line(Icons.Rounded.DeleteSweep, tr("Delete runtime data"), "Frees ${runtime.installedBytes / 1_000_000} MB. You can set it up again later.") { actions.onDeleteRuntime() }
             }
-            SectionHeader("Voice", "Talking instead of typing", Modifier.padding(start = 4.dp, top = 12.dp))
+            SectionHeader(tr("Voice"), tr("Talking instead of typing"), Modifier.padding(start = 4.dp, top = 12.dp))
             AppCard(padding = PaddingValues(vertical = 4.dp)) {
-                Line(Icons.Rounded.RecordVoiceOver, "Voice", listOf(
-                    mapOf("system" to "Phone voice", "gemini" to "Google voice", "openai" to "OpenAI voice", "elevenlabs" to "ElevenLabs voice")[s.ttsProvider] ?: "Phone voice",
-                    if (s.liveEnabled) "live calls on" else null).filterNotNull().joinToString(" · ")) { voiceSheet = true }
+                Line(Icons.Rounded.RecordVoiceOver, tr("Voice"), listOf(
+                    mapOf("system" to tr("Phone voice"), "gemini" to tr("Google voice"), "openai" to tr("OpenAI voice"), "elevenlabs" to tr("ElevenLabs voice"))[s.ttsProvider] ?: tr("Phone voice"),
+                    if (s.liveEnabled) tr("live calls on") else null).filterNotNull().joinToString(" · ")) { voiceSheet = true }
             }
-            SectionHeader("Background", "So routines and browsing keep going", Modifier.padding(start = 4.dp, top = 12.dp))
+            SectionHeader(tr("Background"), tr("So routines and browsing keep going"), Modifier.padding(start = 4.dp, top = 12.dp))
             AppCard(padding = PaddingValues(vertical = 4.dp)) {
                 val ctx = androidx.compose.ui.platform.LocalContext.current
                 var reliability by remember { mutableStateOf(false) }
                 val problems = remember(reliability) { com.past9.phoneaos.system.Background.problems(com.past9.phoneaos.system.Background.check(ctx)) }
-                Line(Icons.Rounded.NotificationsActive, "Reminders on time", if (problems.isEmpty()) "All set: it can speak up by itself" else problems.first().replaceFirstChar { it.uppercase() }) { reliability = true }
+                Line(Icons.Rounded.NotificationsActive, tr("Reminders on time"), if (problems.isEmpty()) tr("All set: it can speak up by itself") else tr(problems.first()).replaceFirstChar { it.uppercase() }) { reliability = true }
                 if (reliability) ReliabilitySheet { reliability = false }
                 var handoffs by remember { mutableStateOf(false) }
-                Line(Icons.Rounded.Sync, "Hand-offs", com.past9.phoneaos.handoff.HandoffStore.peek(ctx)?.let { "Signed in as $it" } ?: "Let your computers do jobs and report back") { handoffs = true }
+                Line(Icons.Rounded.Sync, tr("Hand-offs"), com.past9.phoneaos.handoff.HandoffStore.peek(ctx)?.let { "Signed in as $it" } ?: tr("Let your computers do jobs and report back")) { handoffs = true }
                 if (handoffs) com.past9.phoneaos.handoff.HandoffSheet { handoffs = false }
-                Line(Icons.Rounded.BatteryChargingFull, "Battery: unrestricted", "Samsung and others stop background apps. Allow this one to keep working.") { actions.onBattery() }
+                Line(Icons.Rounded.BatteryChargingFull, tr("Battery: unrestricted"), tr("Samsung and others stop background apps. Allow this one to keep working.")) { actions.onBattery() }
             }
-            SectionHeader("Your data", "It all lives on this phone", Modifier.padding(start = 4.dp, top = 12.dp))
+            SectionHeader(tr("Your data"), tr("It all lives on this phone"), Modifier.padding(start = 4.dp, top = 12.dp))
             AppCard(padding = PaddingValues(vertical = 4.dp)) {
-                Line(Icons.Rounded.ChatBubbleOutline, "Clear the conversation", "Memory, tasks and routines stay") { actions.onClearChat() }
-                Line(Icons.Rounded.RestartAlt, "Reset everything", "Deletes keys, memory, tasks and routines", danger = true) { confirmReset = true }
+                Line(Icons.Rounded.ChatBubbleOutline, tr("Clear the conversation"), tr("Memory, tasks and routines stay")) { actions.onClearChat() }
+                Line(Icons.Rounded.RestartAlt, tr("Reset everything"), tr("Deletes keys, memory, tasks and routines"), danger = true) { confirmReset = true }
             }
-            Text("Version $version · No account, no servers of ours. Your AI provider sees your messages; nothing else leaves the phone.",
+            Text(trArgs("Version %1\$s · No account, no servers of ours. Your AI provider sees your messages; nothing else leaves the phone.", version),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp, vertical = 16.dp))
         }
     }
     // Slide-up sheets, never pop-up dialogs.
     if (pickSub) ModalBottomSheet(onDismissRequest = { pickSub = false }) {
         Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 24.dp)) {
-            Text("Which subscription?", style = MaterialTheme.typography.headlineSmall)
+            Text(tr("Which subscription?"), style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.height(12.dp))
             com.past9.phoneaos.data.SubKind.entries.forEach { k ->
                 Surface(onClick = { pickSub = false; actions.onChooseSub(k) }, shape = MaterialTheme.shapes.large,
                     color = if (s.mode == PowerMode.SUBSCRIPTION && s.subKind == k) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                     Column(Modifier.padding(16.dp)) {
-                        Text("${k.label} ${k.plan}", style = MaterialTheme.typography.titleMedium)
-                        Text(if (k == com.past9.phoneaos.data.SubKind.OPENCODE) "Paste your OpenCode key" else "Sign in with your ${k.label} account", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(trArgs("%1\$s %2\$s", k.label, k.plan), style = MaterialTheme.typography.titleMedium)
+                        Text(if (k == com.past9.phoneaos.data.SubKind.OPENCODE) tr("Paste your OpenCode key") else trArgs("Sign in with your %1\$s account", k.label), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -128,23 +143,23 @@ fun SettingsScreen(s: AgentSettings, runtime: RuntimeInfo, version: String, acti
     edit?.let { (label, save) ->
         ModalBottomSheet(onDismissRequest = { edit = null }) {
             Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 24.dp)) {
-                Text(label, style = MaterialTheme.typography.headlineSmall)
+                Text(tr(label), style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.height(16.dp))
                 OutlinedTextField(editValue, { editValue = it }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium)
                 Spacer(Modifier.height(16.dp))
-                Button(onClick = { save(editValue); edit = null }, modifier = Modifier.fillMaxWidth().height(56.dp), shapes = ButtonDefaults.shapes()) { Text("Save") }
+                Button(onClick = { save(editValue); edit = null }, modifier = Modifier.fillMaxWidth().height(56.dp), shapes = ButtonDefaults.shapes()) { Text(tr("Save")) }
             }
         }
     }
     if (confirmReset) ModalBottomSheet(onDismissRequest = { confirmReset = false }) {
         Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 24.dp)) {
-            Text("Reset everything?", style = MaterialTheme.typography.headlineSmall)
+            Text(tr("Reset everything?"), style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.height(8.dp))
-            Text("This deletes your keys, memory, tasks, routines and the conversation from this phone. It can't be undone.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(tr("This deletes your keys, memory, tasks, routines and the conversation from this phone. It can't be undone."), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(20.dp))
             Button(onClick = { confirmReset = false; actions.onResetAll() }, modifier = Modifier.fillMaxWidth().height(56.dp), shapes = ButtonDefaults.shapes(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError)) { Text("Reset everything") }
-            TextButton(onClick = { confirmReset = false }, modifier = Modifier.fillMaxWidth().height(48.dp)) { Text("Keep my stuff") }
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError)) { Text(tr("Reset everything")) }
+            TextButton(onClick = { confirmReset = false }, modifier = Modifier.fillMaxWidth().height(48.dp)) { Text(tr("Keep my stuff")) }
         }
     }
 }

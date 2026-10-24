@@ -23,6 +23,7 @@ import com.past9.phoneaos.machines.Ssh
 import com.past9.phoneaos.share.ShareKind
 import com.past9.phoneaos.share.ShareLogic
 import com.past9.phoneaos.share.ShareStore
+import com.past9.phoneaos.ui.i18n.I18n
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -107,7 +108,7 @@ class MediaTranscribeTool(private val context: Context, private val settings: Se
                         else if (!allow && ShareLogic.holdForWifi(pf.length(), false, metered))
                             return HOLD + " It is ${ShareLogic.formatSize(pf.length())} of audio. Ask the user, or wait for Wi-Fi."
                         else {
-                            ctx.activity("Listening to ${f.name}", JSONObject().put("tool", "media"))
+                            ctx.activity(I18n.trArgs("Listening to %1\$s", uiLang(context), f.name), JSONObject().put("tool", "media"))
                             val r = runCatching { gemini(key, pf, mime, input.optString("language_hint")) }
                             r.getOrNull()?.let { return "Transcript of ${f.name} (${ShareLogic.formatDuration(ShareStore.durationMs(f.path))}), by Gemini on the phone:\n$it" }
                             notes += "Gemini failed: ${r.exceptionOrNull()?.message?.take(200)}"
@@ -128,10 +129,10 @@ class MediaTranscribeTool(private val context: Context, private val settings: Se
             return HOLD + " ${f.name} is ${if (kind == ShareKind.VIDEO) "a video" else "big"} (${ShareLogic.formatSize(f.length())}), and sending it to ${m.name} would use their mobile data. Ask the user, or wait for Wi-Fi." +
                 (if (notes.isNotEmpty()) " (" + notes.joinToString(" ") + ")" else "")
         if (!m.trusted) {
-            val a = ctx.ask("APPROVAL|Upload a file to transcribe on ${m.name}|${f.name} (${ShareLogic.formatSize(f.length())})", listOf("Approve", "Decline"))
+            val a = ctx.ask("APPROVAL|" + I18n.trArgs("Upload a file to transcribe on %1\$s", uiLang(context), m.name) + "|${f.name} (${ShareLogic.formatSize(f.length())})", listOf("Approve", "Decline"))
             if (a != "Approve") return (if (a == null) "Needs the user's approval and nobody is around. Not done." else "The user declined. Not done.") + " " + notes.joinToString(" ")
         }
-        ctx.activity("Sending ${f.name} to ${m.name} to transcribe", JSONObject().put("tool", "media"))
+        ctx.activity(I18n.trArgs("Sending %1\$s to %2\$s to transcribe", uiLang(context), f.name, m.name), JSONObject().put("tool", "media"))
         val r = runCatching {
             machines.with(m.id) { _, s ->
                 val home = Ssh.run(s, "mkdir -p \"\$HOME/.agent-media\" && printf %s \"\$HOME\"", 30).output.trim()

@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.past9.phoneaos.App
 import com.past9.phoneaos.system.Background
 import com.past9.phoneaos.ui.AppSheet
+import com.past9.phoneaos.ui.i18n.tr
 import kotlinx.coroutines.launch
 
 /**
@@ -42,31 +43,31 @@ fun ReliabilitySheet(onDismiss: () -> Unit) {
         !h.exactAlarms -> { { Background.openExactAlarms(context) } }
         else -> null
     }
-    AppSheet(Icons.Rounded.NotificationsActive, "Reminders on time", if (firstFix == null) "All set" else "One thing to switch on",
-        onDismiss = onDismiss, primary = if (firstFix == null) "Done" else "Fix it", primaryEnabled = true,
+    AppSheet(Icons.Rounded.NotificationsActive, tr("Reminders on time"), if (firstFix == null) tr("All set") else tr("One thing to switch on"),
+        onDismiss = onDismiss, primary = if (firstFix == null) tr("Done") else tr("Fix it"), primaryEnabled = true,
         onPrimary = { firstFix?.invoke() ?: onDismiss() },
-        secondary = { TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text(if (firstFix == null) "Close" else "Not now") } }) {
-        Text("So your agent can speak up by itself: ring your reminders, tell you before a meeting, and bring back what was agreed after one.",
+        secondary = { TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text(if (firstFix == null) tr("Close") else tr("Not now")) } }) {
+        Text(tr("So your agent can speak up by itself: ring your reminders, tell you before a meeting, and bring back what was agreed after one."),
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(16.dp))
-        Row(Icons.Rounded.Notifications, "Notifications", h.notifications, if (h.notifications) "On" else "Off: nothing can reach you") {
+        Row(Icons.Rounded.Notifications, tr("Notifications"), h.notifications, if (h.notifications) tr("On") else tr("Off: nothing can reach you")) {
             if (Build.VERSION.SDK_INT >= 33) askNotify.launch(Manifest.permission.POST_NOTIFICATIONS) else Background.openAppDetails(context)
         }
-        Row(Icons.Rounded.BatteryChargingFull, "Battery: unrestricted", batteryOk,
-            when { h.restricted -> "Set to Restricted. Tap, then Battery > Unrestricted"; !h.batteryUnrestricted -> "Optimised. Tap and choose Allow"; else -> "On" }) {
+        Row(Icons.Rounded.BatteryChargingFull, tr("Battery: unrestricted"), batteryOk,
+            when { h.restricted -> tr("Set to Restricted. Tap, then Battery > Unrestricted"); !h.batteryUnrestricted -> tr("Optimised. Tap and choose Allow"); else -> tr("On") }) {
             if (h.restricted) Background.openAppDetails(context) else Background.requestBatteryExemption(context)
         }
-        Row(Icons.Rounded.Alarm, "Exact alarms", h.exactAlarms, if (h.exactAlarms) "Allowed" else "Tap and allow alarms and reminders") { Background.openExactAlarms(context) }
-        Row(Icons.Rounded.CalendarMonth, "Your calendar", h.calendar, if (h.calendar) "A heads-up before meetings, action items after" else "Optional: tap for meeting heads-ups and action items") {
+        Row(Icons.Rounded.Alarm, tr("Exact alarms"), h.exactAlarms, if (h.exactAlarms) tr("Allowed") else tr("Tap and allow alarms and reminders")) { Background.openExactAlarms(context) }
+        Row(Icons.Rounded.CalendarMonth, tr("Your calendar"), h.calendar, if (h.calendar) tr("A heads-up before meetings, action items after") else tr("Optional: tap for meeting heads-ups and action items")) {
             askCalendar.launch(Manifest.permission.READ_CALENDAR)
         }
         Spacer(Modifier.height(12.dp))
-        Text("Quiet hours", style = MaterialTheme.typography.titleSmall)
-        Text("Your agent won't bring anything up by itself in these hours. Reminders you set for a time still ring.", style = MaterialTheme.typography.bodySmall,
+        Text(tr("Quiet hours"), style = MaterialTheme.typography.titleSmall)
+        Text(tr("Your agent won't bring anything up by itself in these hours. Reminders you set for a time still ring."), style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 4.dp))
         var quiet by remember { mutableStateOf(runCatching { com.past9.phoneaos.triggers.Wakes.quiet(context).toString() }.getOrDefault("23:00-07:00")) }
         androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("off" to "Off", "22:00-06:00" to "22:00 to 06:00", "23:00-07:00" to "23:00 to 07:00", "00:00-08:00" to "00:00 to 08:00").forEach { (v, label) ->
+            listOf("off" to tr("Off"), "22:00-06:00" to tr("22:00 to 06:00"), "23:00-07:00" to tr("23:00 to 07:00"), "00:00-08:00" to tr("00:00 to 08:00")).forEach { (v, label) ->
                 FilterChip(selected = quiet == v, onClick = {
                     quiet = v
                     scope.launch { App.graph(context).settings.setExtra("quiet_hours", v); runCatching { com.past9.phoneaos.triggers.Wakes.rearm(context) } }
@@ -75,12 +76,12 @@ fun ReliabilitySheet(onDismiss: () -> Unit) {
         }
         if (h.samsung) {
             Spacer(Modifier.height(12.dp))
-            Text("On a Samsung, also:", style = MaterialTheme.typography.titleSmall)
-            Text("Samsung puts apps you haven't opened for a few days on its \"sleeping apps\" list, and a sleeping app can't ring or run. Taking this app off that list is what keeps reminders on time.",
+            Text(tr("On a Samsung, also:"), style = MaterialTheme.typography.titleSmall)
+            Text(tr("Samsung puts apps you haven't opened for a few days on its \"sleeping apps\" list, and a sleeping app can't ring or run. Taking this app off that list is what keeps reminders on time."),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 4.dp))
-            Text("1. Tap below to open Battery\n2. Background usage limits\n3. Never sleeping apps\n4. Tap +, pick this app, Add",
+            Text(tr("1. Tap below to open Battery\n2. Background usage limits\n3. Never sleeping apps\n4. Tap +, pick this app, Add"),
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 6.dp))
-            OutlinedButton(onClick = { Background.openSamsungBattery(context) }, modifier = Modifier.fillMaxWidth()) { Text("Open Samsung battery settings") }
+            OutlinedButton(onClick = { Background.openSamsungBattery(context) }, modifier = Modifier.fillMaxWidth()) { Text(tr("Open Samsung battery settings")) }
         }
     }
 }

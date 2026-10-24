@@ -225,7 +225,7 @@ class RuntimeTest {
         val rt = runtime(p)
         rt.send("Email Lerato that I'll see her at 6")
         withTimeout(5000) { while (db.chat().all().first().none { it.kind == "question" }) delay(50) }
-        withTimeout(2000) { while (phone.notes.none { it.startsWith("Approve?|Send email to Lerato") }) delay(20) }
+        withTimeout(2000) { while (phone.notes.none { it.startsWith("تأیید می‌کنید؟|Send email to Lerato") }) delay(20) }
         val q = db.chat().all().first().first { it.kind == "question" }
         assertTrue(q.text.startsWith("APPROVAL|Send email to Lerato|"))
         assertTrue("the question belongs to the helper", JSONObject(q.meta).has("helper"))
@@ -409,6 +409,6 @@ class RuntimeTest {
         }
         val rt = AgentRuntime(ApplicationProvider.getApplicationContext(), db, settings, CoroutineScope(SupervisorJob() + Dispatchers.IO), phone, { failing })
         rt.send("hi"); waitIdle(rt)
-        assertEquals("Your API key was rejected. Check it in Settings.", db.chat().all().first().last().text)
+        assertEquals("کلید API شما رد شد. آن را در تنظیمات بررسی کنید.", db.chat().all().first().last().text)
     }
 }

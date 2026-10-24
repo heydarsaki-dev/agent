@@ -25,6 +25,8 @@ import com.past9.phoneaos.agent.ModelInfo
 import com.past9.phoneaos.data.HelperModel
 import com.past9.phoneaos.data.PinnedAgent
 import com.past9.phoneaos.ui.LocalSheetPreview
+import com.past9.phoneaos.ui.i18n.tr
+import com.past9.phoneaos.ui.i18n.trArgs
 import com.past9.phoneaos.ui.theme.Eyebrow
 
 private const val MAX_HELPERS = 6
@@ -50,19 +52,19 @@ fun HelperRosterSheet(models: List<ModelInfo>?, error: String?, initial: List<He
     val body: @Composable () -> Unit = {
         Column(Modifier.fillMaxWidth().navigationBarsPadding()) {
             Column(Modifier.padding(horizontal = 24.dp)) {
-                Text("HELPERS", style = Eyebrow, color = cs.primary)
-                Text("Who your agent hands work to", style = MaterialTheme.typography.headlineSmall)
+                Text(tr("HELPERS"), style = Eyebrow, color = cs.primary)
+                Text(tr("Who your agent hands work to"), style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.height(4.dp))
-                Text("Pick up to $MAX_HELPERS models and tag what each is good for. Your agent sends every job to the helper that fits and writes a fuller brief for the smaller ones. The first you pick is the default.",
+                Text(trArgs(if (MAX_HELPERS == 1) "Pick up 1 model and tag what it is good for. Your agent sends every job to the helper that fits. The first you pick is the default." else "Pick up to %1\$d models and tag what each is good for. Your agent sends every job to the helper that fits and writes a fuller brief for the smaller ones. The first you pick is the default.", MAX_HELPERS),
                     style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
                 Spacer(Modifier.height(12.dp))
-                if (all.size > 8) OutlinedTextField(q, { q = it }, placeholder = { Text("Search models") }, leadingIcon = { Icon(Icons.Rounded.Search, null) }, singleLine = true,
+                if (all.size > 8) OutlinedTextField(q, { q = it }, placeholder = { Text(tr("Search models")) }, leadingIcon = { Icon(Icons.Rounded.Search, null) }, singleLine = true,
                     modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge)
             }
             when {
                 error != null -> Text(error, Modifier.padding(24.dp), color = cs.error)
                 models == null -> Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { LoadingIndicator() }
-                all.isEmpty() -> Text("No models came back for this account.", Modifier.padding(24.dp), color = cs.onSurfaceVariant)
+                all.isEmpty() -> Text(tr("No models came back for this account."), Modifier.padding(24.dp), color = cs.onSurfaceVariant)
                 else -> LazyColumn(Modifier.fillMaxWidth().weight(1f, fill = false).heightIn(max = 520.dp), contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 8.dp)) {
                     // Picked ones first, so the roster reads top to bottom.
                     val shown = all.filter { q.isBlank() || it.name.contains(q, true) || it.id.contains(q, true) }
@@ -76,9 +78,9 @@ fun HelperRosterSheet(models: List<ModelInfo>?, error: String?, initial: List<He
                     if (kept.isNotEmpty() && q.isBlank()) {
                         item(key = "kept-header") {
                             Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 20.dp, bottom = 4.dp)) {
-                                Text("KEPT BY YOUR AGENT", style = Eyebrow, color = cs.onSurfaceVariant)
+                                Text(tr("KEPT BY YOUR AGENT"), style = Eyebrow, color = cs.onSurfaceVariant)
                                 Spacer(Modifier.height(2.dp))
-                                Text("Helpers that cracked something, kept for jobs like it. Your agent looks after these itself.", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+                                Text(tr("Helpers that cracked something, kept for jobs like it. Your agent looks after these itself."), style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
                             }
                         }
                         items(kept.sortedByDescending { it.lastUsedAt }, key = { "kept-" + it.id }) { a -> KeptRow(a) }
@@ -87,7 +89,7 @@ fun HelperRosterSheet(models: List<ModelInfo>?, error: String?, initial: List<He
             }
             Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(top = 8.dp, bottom = 20.dp)) {
                 Button(onClick = { onSave(picked.toList()); onDismiss() }, modifier = Modifier.fillMaxWidth().height(56.dp), shapes = ButtonDefaults.shapes()) {
-                    Text(when (picked.size) { 0 -> "Use your agent's model only"; 1 -> "Save 1 helper"; else -> "Save ${picked.size} helpers" }, style = MaterialTheme.typography.titleMedium)
+                    Text(when (picked.size) { 0 -> tr("Use your agent's model only"); 1 -> tr("Save 1 helper"); else -> trArgs("Save %1\$d helpers", picked.size) }, style = MaterialTheme.typography.titleMedium)
                 }
             }
         }
@@ -110,7 +112,7 @@ private fun KeptRow(a: PinnedAgent) {
             Text(a.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(a.goodFor.joinToString(", ").ifBlank { a.summary }, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        Text("${a.jobs.size} job${if (a.jobs.size == 1) "" else "s"}", style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant, modifier = Modifier.padding(start = 8.dp))
+        Text(trArgs(if (a.jobs.size == 1) "%1\$s job" else "%1\$s jobs", a.jobs.size), style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant, modifier = Modifier.padding(start = 8.dp))
     }
 }
 
@@ -128,16 +130,16 @@ private fun RosterRow(m: ModelInfo, picked: HelperModel?, index: Int, full: Bool
                     }
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(m.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, color = if (!on && full) cs.onSurfaceVariant else cs.onSurface)
-                        val sub = listOfNotNull(if (index == 0) "Default" else null, m.note.takeIf { it.isNotBlank() }, m.id.takeIf { it.isNotBlank() && it != m.name }).joinToString(" · ")
+                        Text(tr(m.name), style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, color = if (!on && full) cs.onSurfaceVariant else cs.onSurface)
+                        val sub = listOfNotNull(if (index == 0) tr("Default") else null, m.note.takeIf { it.isNotBlank() }?.let { tr(it) }, m.id.takeIf { it.isNotBlank() && it != m.name }).joinToString(" · ")
                         if (sub.isNotBlank()) Text(sub, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
-                    if (on) Icon(Icons.Rounded.Check, "Picked", tint = cs.primary)
+                    if (on) Icon(Icons.Rounded.Check, tr("Picked"), tint = cs.primary)
                 }
             }
             AnimatedVisibility(on) {
                 Column(Modifier.padding(start = 54.dp, end = 12.dp, bottom = 14.dp)) {
-                    Text("GOOD FOR", style = Eyebrow, color = cs.onSurfaceVariant)
+                    Text(tr("GOOD FOR"), style = Eyebrow, color = cs.onSurfaceVariant)
                     Spacer(Modifier.height(6.dp))
                     val tags = picked?.tags.orEmpty()
                     var adding by remember { mutableStateOf(false) }
@@ -145,16 +147,16 @@ private fun RosterRow(m: ModelInfo, picked: HelperModel?, index: Int, full: Bool
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         (HelperModel.PresetTags + tags.filter { it !in HelperModel.PresetTags }).forEach { t ->
                             val sel = t in tags
-                            FilterChip(sel, onClick = { onTags(if (sel) tags - t else tags + t) }, label = { Text(t) },
+                            FilterChip(sel, onClick = { onTags(if (sel) tags - t else tags + t) }, label = { Text(tr(t)) },
                                 leadingIcon = if (sel) ({ Icon(Icons.Rounded.Check, null, Modifier.size(16.dp)) }) else null)
                         }
-                        AssistChip(onClick = { adding = true }, label = { Text("Your own") }, leadingIcon = { Icon(Icons.Rounded.Add, null, Modifier.size(16.dp)) })
+                        AssistChip(onClick = { adding = true }, label = { Text(tr("Your own")) }, leadingIcon = { Icon(Icons.Rounded.Add, null, Modifier.size(16.dp)) })
                     }
                     if (adding) Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(custom, { custom = it.take(24) }, placeholder = { Text("e.g. Job applications") }, singleLine = true,
+                        OutlinedTextField(custom, { custom = it.take(24) }, placeholder = { Text(tr("e.g. Job applications")) }, singleLine = true,
                             modifier = Modifier.weight(1f), shape = MaterialTheme.shapes.large)
                         Spacer(Modifier.width(8.dp))
-                        FilledTonalButton(onClick = { custom.trim().takeIf { it.isNotEmpty() && it !in tags }?.let { onTags(tags + it) }; custom = ""; adding = false }, shapes = ButtonDefaults.shapes()) { Text("Add") }
+                        FilledTonalButton(onClick = { custom.trim().takeIf { it.isNotEmpty() && it !in tags }?.let { onTags(tags + it) }; custom = ""; adding = false }, shapes = ButtonDefaults.shapes()) { Text(tr("Add")) }
                     }
                 }
             }

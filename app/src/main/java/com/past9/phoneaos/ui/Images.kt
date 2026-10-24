@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.SubcomposeAsyncImage
+import com.past9.phoneaos.ui.i18n.tr
 
 data class ChatImage(val url: String, val alt: String)
 
@@ -69,7 +70,7 @@ private fun ChatImageView(img: ChatImage, modifier: Modifier, scale: ContentScal
             Row(Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh).defaultMinSize(200.dp, 80.dp).padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.BrokenImage, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(10.dp))
-                Text(img.alt.ifBlank { "Image didn't load" }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(img.alt.ifBlank { tr("Image didn't load") }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         },
     )

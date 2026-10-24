@@ -25,9 +25,10 @@ class AndroidPhone(private val context: Context) : PhoneBridge {
     private val active = AtomicInteger(0)
 
     init {
+        val lang = com.past9.phoneaos.ui.i18n.I18n.language(context)
         val nm = context.getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(NotificationChannel(CH_MESSAGES, "Messages from your agent", NotificationManager.IMPORTANCE_HIGH))
-        nm.createNotificationChannel(NotificationChannel(CH_WORK, "Agent working", NotificationManager.IMPORTANCE_MIN))
+        nm.createNotificationChannel(NotificationChannel(CH_MESSAGES, com.past9.phoneaos.ui.i18n.trAny("Messages from your agent", lang), NotificationManager.IMPORTANCE_HIGH))
+        nm.createNotificationChannel(NotificationChannel(CH_WORK, com.past9.phoneaos.ui.i18n.trAny("Agent working", lang), NotificationManager.IMPORTANCE_MIN))
     }
 
     override fun notify(title: String, body: String, questionItemId: Long?, options: List<String>) {
@@ -36,7 +37,7 @@ class AndroidPhone(private val context: Context) : PhoneBridge {
         val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_IMMUTABLE)
         val st = App.graph(context).settings.state.value
         val agent = Identity.publishAgentShortcut(context, st.agentName, st.mascot, st.accent)
-        val me = androidx.core.app.Person.Builder().setName(st.userName.ifBlank { "You" }).setKey("me").build()
+        val me = androidx.core.app.Person.Builder().setName(st.userName.ifBlank { com.past9.phoneaos.ui.i18n.trAny("You", st.language) }).setKey("me").build()
         val style = NotificationCompat.MessagingStyle(me).setConversationTitle(null).addMessage("$title\n$shown", System.currentTimeMillis(), agent)
         val b = NotificationCompat.Builder(context, CH_MESSAGES).setSmallIcon(Identity.statIcon(context, st.mascot)).setContentTitle(title)
             .setColor(com.past9.phoneaos.ui.theme.accentOf(st.accent).lP.let { android.graphics.Color.rgb((it.red * 255).toInt(), (it.green * 255).toInt(), (it.blue * 255).toInt()) })
@@ -46,7 +47,8 @@ class AndroidPhone(private val context: Context) : PhoneBridge {
         if (questionItemId != null) com.past9.phoneaos.agent.AskOptions.fit(options, 3).forEachIndexed { i, opt ->
             val pi = PendingIntent.getBroadcast(context, nid * 10 + i,
                 Intent(context, AnswerReceiver::class.java).putExtra("item", questionItemId).putExtra("option", opt).putExtra("nid", nid), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-            b.addAction(0, opt, pi)
+            // The label is Persian, the value posted back stays the English key the runtime matches on.
+            b.addAction(0, com.past9.phoneaos.ui.i18n.trAny(opt, st.language), pi)
         }
         runCatching { NotificationManagerCompat.from(context).notify(nid, b.build()) } // no permission yet: chat still has it
     }
@@ -115,17 +117,31 @@ class WorkService : Service() {
 
     companion object {
         const val EXTRA_KEEPALIVE = "keepalive"
-        fun text(helpers: Int) = if (helpers > 0) "Working: $helpers helper${if (helpers > 1) "s" else ""}" else "Working on it"
+
+        /** The one-line status under the work notification. English keeps its plural, Persian doesn't need it. */
+        fun text(helpers: Int, lang: String): String = when {
+            helpers <= 0 -> com.past9.phoneaos.ui.i18n.trAny("Working on it", lang)
+            com.past9.phoneaos.ui.i18n.I18n.isPersian(lang) -> com.past9.phoneaos.ui.i18n.I18n.trArgs("Working: %1\$d helpers", lang, helpers)
+            helpers == 1 -> "Working: $helpers helper"
+            else -> "Working: $helpers helpers"
+        }
 
         fun build(context: Context): android.app.Notification {
             val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
             val st = App.graph(context).settings.state.value
-            val who = st.agentName.ifBlank { "Agent" }
+            val lang = st.language
+            val who = st.agentName.ifBlank { com.past9.phoneaos.ui.i18n.trAny("Agent", lang) }
             val h = AndroidPhone.helperCount
+            val title = when {
+                h <= 0 -> com.past9.phoneaos.ui.i18n.I18n.trArgs("%1\$s is working", lang, who)
+                com.past9.phoneaos.ui.i18n.I18n.isPersian(lang) -> com.past9.phoneaos.ui.i18n.I18n.trArgs("%1\$s is working: %2\$d helpers", lang, who, h)
+                h == 1 -> "$who is working: $h helper"
+                else -> "$who is working: $h helpers"
+            }
             return Identity.asAgent(context, NotificationCompat.Builder(context, AndroidPhone.CH_WORK).setSmallIcon(Identity.statIcon(context, st.mascot))
-                .setContentTitle(if (h > 0) "$who is working: $h helper${if (h > 1) "s" else ""}" else "$who is working")
-                .setContentText("You can leave the app. I will let you know.").setOngoing(true).setContentIntent(open),
-                "", text(h)).build()
+                .setContentTitle(title)
+                .setContentText(com.past9.phoneaos.ui.i18n.trAny("You can leave the app. I will let you know.", lang)).setOngoing(true).setContentIntent(open),
+                "", text(h, lang)).build()
         }
 
         /** Update the ongoing notification in place (the helper count changed). */

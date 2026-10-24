@@ -79,7 +79,8 @@ class CallController(private val context: Context, private val db: AppDb, privat
         val system = base + (if (pinned.isNotBlank()) "\n\nWhat you know about them:\n$pinned" else "") +
             (if (recent.isNotBlank()) "\n\nThe chat so far (this call continues it):\n$recent" else "")
         callStart = System.currentTimeMillis(); callLines.clear()
-        live = LiveSession(key, "gemini-3.1-flash-live-preview", s.ttsVoice.takeIf { s.ttsProvider == "gemini" && it.isNotBlank() } ?: "Kore", system, tools = tools) { e -> onEvent(e) }.also { it.start() }
+        live = LiveSession(key, "gemini-3.1-flash-live-preview", s.ttsVoice.takeIf { s.ttsProvider == "gemini" && it.isNotBlank() } ?: "Kore", system,
+            language = if (com.past9.phoneaos.ui.i18n.I18n.isPersian(s.language)) "fa-IR" else "en-US", tools = tools) { e -> onEvent(e) }.also { it.start() }
         // Read the main agent's new messages and questions into the call.
         watcher = scope.launch {
             var last = db.chat().all().first().lastOrNull()?.id ?: 0L

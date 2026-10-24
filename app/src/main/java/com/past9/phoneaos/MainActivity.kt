@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.drawable.toBitmap
 import com.past9.phoneaos.agent.AnthropicProvider
+import com.past9.phoneaos.ui.i18n.withAppLanguage
 import com.past9.phoneaos.agent.Msg
 import com.past9.phoneaos.agent.OpenAiCompatProvider
 import com.past9.phoneaos.browser.BrowserService
@@ -54,6 +55,11 @@ class MainActivity : ComponentActivity() {
     /** Text shared in from another app, or a route asked for by a notification. */
     private val incoming = MutableStateFlow<Pair<String?, String?>>(null to null)
 
+    /** Persian is the app's default language: apply it (and its RTL layout) before anything draws. */
+    override fun attachBaseContext(base: android.content.Context) {
+        super.attachBaseContext(base.withAppLanguage())
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -61,9 +67,17 @@ class MainActivity : ComponentActivity() {
         val g = App.graph(this)
         setContent {
             val st by g.settings.state.collectAsStateWithLifecycle()
-            AppTheme(accent = st.accent, mascot = st.mascot) {
-                androidx.compose.runtime.CompositionLocalProvider(com.past9.phoneaos.ui.screens.LocalStopHelper provides { id: Long -> g.runtime.stopHelper(id); Unit },
-                    com.past9.phoneaos.ui.screens.LocalCards provides App.graph(this).cards.cards.collectAsStateWithLifecycle().value) { Root(g) }
+            // Compose follows the configuration for RTL, but pin it too so nothing can miss it.
+            val layoutDir = if (com.past9.phoneaos.ui.i18n.I18n.isPersian(st.language)) androidx.compose.ui.unit.LayoutDirection.Rtl
+                else androidx.compose.ui.unit.LayoutDirection.Ltr
+            androidx.compose.runtime.CompositionLocalProvider(
+                com.past9.phoneaos.ui.i18n.LocalLanguage provides st.language,
+                androidx.compose.ui.platform.LocalLayoutDirection provides layoutDir,
+            ) {
+                AppTheme(accent = st.accent, mascot = st.mascot) {
+                    androidx.compose.runtime.CompositionLocalProvider(com.past9.phoneaos.ui.screens.LocalStopHelper provides { id: Long -> g.runtime.stopHelper(id); Unit },
+                        com.past9.phoneaos.ui.screens.LocalCards provides App.graph(this).cards.cards.collectAsStateWithLifecycle().value) { Root(g) }
+                }
             }
         }
     }
@@ -274,7 +288,8 @@ class MainActivity : ComponentActivity() {
             fun join(t: String) = if (t.isBlank()) base else if (base.isBlank()) t else base.trimEnd() + " " + t
             var heard = false
             val vocab = listOf(settings.agentName, settings.userName).filter { it.isNotBlank() && it != "Your agent" }
-            val d = com.past9.phoneaos.voice.Dictation(key, vocab, onText = { t -> runOnUiThread { heard = heard || t.isNotBlank(); draft = join(t) } }, onEnd = { err ->
+            val d = com.past9.phoneaos.voice.Dictation(key, vocab, languageCodes = if (com.past9.phoneaos.ui.i18n.I18n.isPersian(g.settings.state.value.language)) listOf("fa-IR") else listOf("en-ZA", "zu-ZA"),
+                onText = { t -> runOnUiThread { heard = heard || t.isNotBlank(); draft = join(t) } }, onEnd = { err ->
                 runOnUiThread { dictating = false; dictation = null; if (err != null && !heard) legacyMic() }
             })
             dictation = d; dictating = true; d.start()

@@ -14,6 +14,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.CallMade
+import androidx.compose.material.icons.automirrored.rounded.CallReceived
+import androidx.compose.material.icons.automirrored.rounded.StarHalf
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.CallMade
 import androidx.compose.material.icons.rounded.Check
@@ -54,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.past9.phoneaos.ui.openui.OpenUiLang.Action
 import com.past9.phoneaos.ui.openui.OpenUiLang.Node
+import com.past9.phoneaos.ui.i18n.tr
 
 /** What a tap on a generated button sends back to the agent (the chat sets it; elsewhere taps only open links). */
 val LocalOpenUiSend = compositionLocalOf<(String) -> Unit> { {} }
@@ -315,7 +319,7 @@ private fun FactList(rows: List<Map<*, *>>) {
                 val left = r["left"]?.toString().orEmpty(); val value = fmt(r["right"])
                 if (i > 0) HorizontalDivider(Modifier.padding(start = 62.dp), color = cs.outlineVariant.copy(alpha = 0.45f))
                 val out = value.trim().startsWith("-"); val into = value.trim().startsWith("+")
-                val icon = OpenUiIcons.forText(left) ?: if (out) Icons.Rounded.CallMade else if (into) Icons.Rounded.CallReceived else null
+                val icon = OpenUiIcons.forText(left) ?: if (out) Icons.AutoMirrored.Rounded.CallMade else if (into) Icons.AutoMirrored.Rounded.CallReceived else null
                 val long = value.length > 30
                 Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = if (long) Alignment.Top else Alignment.CenterVertically) {
                     if (icon != null) IconChip(icon, 36.dp, cs.surfaceContainerHigh, cs.onSurfaceVariant, cookie = false)
@@ -351,7 +355,7 @@ private fun Stars(rating: Double, reviews: Double?) {
     val cs = MaterialTheme.colorScheme
     val said = "Rated ${fmtRating(rating)} out of 5" + (reviews?.let { ", ${count(it)} reviews" } ?: "")
     Row(Modifier.semantics { contentDescription = said }, verticalAlignment = Alignment.CenterVertically) {
-        starKinds(rating).forEach { k -> Icon(when (k) { 2 -> Icons.Rounded.Star; 1 -> Icons.Rounded.StarHalf; else -> Icons.Rounded.StarBorder }, null, Modifier.size(16.dp), tint = if (k == 0) cs.outline else starGold()) }
+        starKinds(rating).forEach { k -> Icon(when (k) { 2 -> Icons.Rounded.Star; 1 -> Icons.AutoMirrored.Rounded.StarHalf; else -> Icons.Rounded.StarBorder }, null, Modifier.size(16.dp), tint = if (k == 0) cs.outline else starGold()) }
         Spacer(Modifier.width(6.dp))
         Text(fmtRating(rating), style = MaterialTheme.typography.labelLarge, color = cs.onSurface)
         reviews?.let { Text(" (${count(it)})", style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant) }
@@ -432,7 +436,7 @@ private fun ActionButton(n: Node, modifier: Modifier) {
     Surface(onClick = { run(); if (tellsAgent) sent = true }, enabled = !sent, shape = RoundedCornerShape(corner), color = bg, contentColor = fg, interactionSource = interaction, modifier = modifier.heightIn(min = 52.dp)) {
         Row(Modifier.padding(horizontal = 20.dp, vertical = 14.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             (if (sent) androidx.compose.material.icons.Icons.Rounded.Check else OpenUiIcons.forAction(label))?.let { Icon(it, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)) }
-            Text(if (sent) "Sent" else label, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(if (sent) tr("Sent") else label, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

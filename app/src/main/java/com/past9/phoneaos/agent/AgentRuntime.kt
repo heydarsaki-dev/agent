@@ -193,7 +193,7 @@ class AgentRuntime(
     /** Helpers the main agent kept, with their context, to hand later jobs to. */
     val pins = com.past9.phoneaos.data.PinnedAgentStore(java.io.File(context.filesDir, "pinned"))
 
-    private fun agentName() = settings.state.value.agentName.takeIf { it.isNotBlank() && it != "Your agent" } ?: "The main agent"
+    private fun agentName() = settings.state.value.agentName.takeIf { it.isNotBlank() && it != "Your agent" } ?: com.past9.phoneaos.ui.i18n.trAny("The main agent", settings.state.value.language)
 
     private fun refreshHelpers() {
         _running.value = helpers.values.sortedBy { it.startedAt }
@@ -437,6 +437,7 @@ class AgentRuntime(
             if (s.userName.isNotBlank()) appendLine("The user's name is ${s.userName}.")
             appendLine("Now: ${now.format(DateTimeFormatter.ofPattern("EEEE d MMMM yyyy, HH:mm"))} (${now.zone}). Always resolve 'today', 'tomorrow', '10am' in THIS timezone and read concrete dates back to the user.")
             appendLine("If a tool fails and you can't get round it, tell the user in one plain line what failed. The user is not a developer and has nobody to send an error to: never tell them to send it, report it or pass it on to a developer.")
+            if (s.language == "fa") appendLine("The app's language is Persian. Write EVERYTHING the user reads — replies, questions, options, status notes, memory pages you draft — in natural, correct Persian (Iranian usage), never English. Keep technical terms exactly as they are (URLs, code, file names, product names like Gmail), but say everything else in Persian.")
             if (main) settings.extra("selfcheck_fail")?.let { appendLine("KNOWN FAULT: $it. If the user asks why jobs aren't working, say that plainly; it is a fault in the app, so don't ask them to report it.") }
             appendLine()
             if (main) {
@@ -718,8 +719,8 @@ class AgentRuntime(
                 b.outcome = if (line.supersededBy != null) "superseded" else "stopped"
                 if (line.supersededBy == null) db.chat().insert(ChatItem(kind = "notice", text = "Stopped.", meta = JSONObject().put("branch", b.item).toString()))
             } catch (e: Exception) {
-                b.outcome = "failed"; b.error = friendlyError(e)
-                db.chat().insert(ChatItem(kind = "notice", text = "A side thread (\"${b.userText.take(50)}\") failed: ${friendlyError(e)}", meta = JSONObject().put("error", true).put("branch", b.item).toString()))
+                b.outcome = "failed"; b.error = friendlyError(e, settings.state.value.language)
+                db.chat().insert(ChatItem(kind = "notice", text = "A side thread (\"${b.userText.take(50)}\") failed: ${friendlyError(e, settings.state.value.language)}", meta = JSONObject().put("error", true).put("branch", b.item).toString()))
             } finally { phone.workFinished() }
         }
     }
@@ -742,7 +743,7 @@ class AgentRuntime(
                 when (e) {
                     is AgentEvent.Thinking -> _status.value = _status.value.copy(working = true, label = if (e.step == 1) "Thinking" else "Working")
                     is AgentEvent.Said -> say(e.text, b.turn)
-                    is AgentEvent.ToolStarted -> _status.value = _status.value.copy(label = labelFor(e.call.name))
+                    is AgentEvent.ToolStarted -> _status.value = _status.value.copy(label = labelFor(e.call.name, settings.state.value.language))
                     is AgentEvent.ToolFinished -> {}
                 }
             },
@@ -968,7 +969,7 @@ class AgentRuntime(
                     when (e) {
                         is AgentEvent.Thinking -> _status.value = _status.value.copy(working = true, label = if (e.step == 1) "Thinking" else "Working")
                         is AgentEvent.Said -> say(e.text)
-                        is AgentEvent.ToolStarted -> _status.value = _status.value.copy(label = labelFor(e.call.name))
+                        is AgentEvent.ToolStarted -> _status.value = _status.value.copy(label = labelFor(e.call.name, settings.state.value.language))
                         is AgentEvent.ToolFinished -> {}
                     }
                 },
@@ -978,7 +979,7 @@ class AgentRuntime(
             // A correction closed this line: its work is kept, and the branch that replaced it carries on. That isn't "Stopped".
             if (mainLine.supersededBy == null) db.chat().insert(ChatItem(kind = "notice", text = "Stopped."))
         } catch (e: Exception) {
-            db.chat().insert(ChatItem(kind = "notice", text = friendlyError(e), meta = JSONObject().put("error", true).toString()))
+            db.chat().insert(ChatItem(kind = "notice", text = friendlyError(e, settings.state.value.language), meta = JSONObject().put("error", true).toString()))
         } finally {
             lineEnded(mainLine)
             phone.workFinished()
@@ -1017,7 +1018,7 @@ class AgentRuntime(
                 }
                 "tool" -> {
                     val name = e.optString("name")
-                    _status.value = _status.value.copy(label = labelFor(name))
+                    _status.value = _status.value.copy(label = labelFor(name, settings.state.value.language))
                     // Our own phone tools log themselves; show everything else (web search, the
                     // user's Claude connectors, Codex commands) as a live step too.
                     if (phoneToolNames.none { it == name }) db.chat().insert(ChatItem(kind = "activity", text = describeExternalTool(name, e.optString("detail")),
@@ -1064,7 +1065,7 @@ class AgentRuntime(
         } catch (e: CancellationException) {
             if (mainLine.supersededBy == null) db.chat().insert(ChatItem(kind = "notice", text = "Stopped."))
         } catch (e: Exception) {
-            db.chat().insert(ChatItem(kind = "notice", text = friendlyError(e), meta = JSONObject().put("error", true).toString()))
+            db.chat().insert(ChatItem(kind = "notice", text = friendlyError(e, settings.state.value.language), meta = JSONObject().put("error", true).toString()))
         } finally { lineEnded(mainLine); phone.workFinished() }
     }
 
@@ -1210,7 +1211,7 @@ class AgentRuntime(
         // One request at a time per helper: an earlier one still open is sent back rather than left hanging.
         escalations[helperId]?.result?.complete(EscalationGate.Triage.PushBack("Ask one thing at a time; this was replaced by your newer request."))
         escalations[helperId] = e
-        ctx.activity("Asked ${agentName()}: ${EscalationGate.plain(question).take(140)}", JSONObject().put("tool", "agent"))
+        ctx.activity(com.past9.phoneaos.ui.i18n.I18n.trArgs("Asked %1\$s: %2\$s", settings.state.value.language, agentName(), EscalationGate.plain(question).take(140)), JSONObject().put("tool", "agent"))
         val origin = runCatching { JSONObject(db.chat().get(helperId)?.meta ?: "{}").optLong("origin").takeIf { it > 0 } }.getOrNull()
         deliver(EscalationGate.note(helperId, label, kind, question, options, gatePushes(helperId)), origin, escalation = helperId)
         val t = try { e.result.await() } finally { escalations.remove(helperId, e) }
@@ -1323,14 +1324,14 @@ class AgentRuntime(
             if (sub == null) HelperCheckpoint.replace(db, itemId, history)
             result = if (sub != null) runSubHelper(itemId, prompt, sys, resume, sub, model) else
                 AgentLoop(provider!!, model, tools(forHelper = true), maxSteps = 120).run(sys, history, ctx, onEvent = { e ->
-                    if (e is AgentEvent.ToolStarted) setHelperMeta(itemId) { it.put("now", labelFor(e.call.name)) }
+                    if (e is AgentEvent.ToolStarted) setHelperMeta(itemId) { it.put("now", labelFor(e.call.name, settings.state.value.language)) }
                     if (e is AgentEvent.Thinking) setHelperMeta(itemId) { it.put("steps", it.optInt("steps") + 1).put("lastStepAt", System.currentTimeMillis()) }
                 }, onAppend = { m -> HelperCheckpoint.append(db, itemId, m) }, incoming = { steerInbox[itemId]?.let { q -> generateSequence { q.poll() }.toList() }.orEmpty() })
             state = "done"
         } catch (e: CancellationException) {
             state = "stopped"; result = "Stopped before it finished."
         } catch (e: Exception) {
-            result = friendlyError(e)
+            result = friendlyError(e, settings.state.value.language)
         } catch (t: Throwable) {
             // An Error (out of memory, a missing class...) in this helper ends this helper only; the others carry on.
             Crashes.record(context, "helper #$itemId \"$label\": ${t::class.java.simpleName} ${t.message}", t)
@@ -1399,7 +1400,7 @@ class AgentRuntime(
                 "text" -> e.optString("text").takeIf { it.isNotBlank() }?.let { last = it }
                 "tool" -> {
                     val name = e.optString("name")
-                    setHelperMeta(itemId) { it.put("now", labelFor(name)) }
+                    setHelperMeta(itemId) { it.put("now", labelFor(name, settings.state.value.language)) }
                     if (workerToolNames.none { it == name }) db.chat().insert(ChatItem(kind = "activity", text = describeExternalTool(name, e.optString("detail")),
                         meta = JSONObject().put("tool", toolGroup(name)).put("by", helpers[itemId]?.label ?: "helper").put("helper", itemId).toString()))
                 }
@@ -1465,7 +1466,7 @@ class AgentRuntime(
             phone.notify(name, out.lineSequence().firstOrNull { it.isNotBlank() }?.take(180) ?: "Done")
             out
         } catch (e: CancellationException) { throw e } catch (e: Exception) {
-            val msg = friendlyError(e)
+            val msg = friendlyError(e, settings.state.value.language)
             db.chat().insert(ChatItem(kind = "notice", text = "Routine \"$name\" failed: $msg"))
             msg
         } finally { phone.workFinished() }
@@ -1539,9 +1540,9 @@ class AgentRuntime(
                                     /** What the user sees as this agent's name ("Uber to airport"). */
                                     private val display: String = agentLabel) : ToolContext {
         override suspend fun activity(text: String, meta: JSONObject): Long =
-            db.chat().insert(ChatItem(kind = "activity", text = text, meta = meta.put("by", display).apply { helperItem?.let { put("helper", it) }; branchItem?.let { put("branch", it) } }.toString()))
+            db.chat().insert(ChatItem(kind = "activity", text = com.past9.phoneaos.ui.i18n.I18n.tr(text, settings.state.value.language), meta = meta.put("by", display).apply { helperItem?.let { put("helper", it) }; branchItem?.let { put("branch", it) } }.toString()))
         override suspend fun updateActivity(id: Long, text: String, meta: JSONObject) {
-            db.chat().get(id)?.let { old -> db.chat().update(old.copy(text = text, meta = JSONObject(old.meta).also { m -> meta.keys().forEach { k -> m.put(k, meta.get(k)) } }.toString())) }
+            db.chat().get(id)?.let { old -> db.chat().update(old.copy(text = com.past9.phoneaos.ui.i18n.I18n.tr(text, settings.state.value.language), meta = JSONObject(old.meta).also { m -> meta.keys().forEach { k -> m.put(k, meta.get(k)) } }.toString())) }
         }
         override suspend fun ask(question: String, options: List<String>): String? {
             if (!interactive) return parentAsk?.ask(question, options)
@@ -1557,18 +1558,25 @@ class AgentRuntime(
                 .apply { helperItem?.let { put("helper", it).put("by", display) }; why?.let { put("why", it).put("whyBy", agentName()) }; branchItem?.let { put("branch", it) } }.toString()))
             val d = CompletableDeferred<String>(); pending[id] = d
             if (helperItem == null) mainQuestions += id
-            val prev = _status.value; if (helperItem == null) _status.value = prev.copy(label = "Waiting for you")
+            val lang = settings.state.value.language
+            val prev = _status.value; if (helperItem == null) _status.value = prev.copy(label = com.past9.phoneaos.ui.i18n.trAny("Waiting for you", lang))
             val isApproval = question.startsWith("APPROVAL|")
             val connect = com.past9.phoneaos.tools.ConnectRequest.parse(question)
             when {
-                connect != null -> phone.notify("Connect ${connect.name}?", connect.summary, id, options)
-                isApproval -> phone.notify("Approve?", question.split("|").getOrElse(1) { "" }, id, options)
-                why != null -> phone.notify("${agentName()} needs you", "$why\n$question", id, options)
-                else -> phone.notify("Your agent has a question", question, id, options)
+                connect != null -> phone.notify(com.past9.phoneaos.ui.i18n.I18n.trArgs("Connect %1\$s?", lang, connect.name), shown(question, lang), id, options)
+                isApproval -> phone.notify(com.past9.phoneaos.ui.i18n.trAny("Approve?", lang), question.split("|").getOrElse(1) { "" }, id, options)
+                why != null -> phone.notify(com.past9.phoneaos.ui.i18n.I18n.trArgs("%1\$s needs you", lang, agentName()), "$why\n$question", id, options)
+                else -> phone.notify(com.past9.phoneaos.ui.i18n.trAny("Your agent has a question", lang), question, id, options)
             }
             return try { d.await() } finally { mainQuestions.remove(id); if (helperItem == null) _status.value = prev.copy(helpers = helpers.size) }
         }
-        override suspend fun notify(title: String, body: String) = phone.notify(title, body)
+        /** What the user should read for a question, in their language: "Connect Gmail?" cards show a connect line, approvals show "action: detail". */
+        fun shown(question: String, language: String): String {
+            val connect = com.past9.phoneaos.tools.ConnectRequest.parse(question)
+            if (connect != null) return com.past9.phoneaos.ui.i18n.I18n.trArgs("Connect %1\$s?", language, connect.name) + " (" + connect.reason.removePrefix("so I can ").trim() + ")"
+            return com.past9.phoneaos.ui.i18n.I18n.tr(com.past9.phoneaos.agent.EscalationGate.plain(question), language)
+        }
+        override suspend fun notify(title: String, body: String) = phone.notify(com.past9.phoneaos.ui.i18n.I18n.tr(title, settings.state.value.language), com.past9.phoneaos.ui.i18n.I18n.tr(body, settings.state.value.language))
     }
 
     // Last, so every field above exists before the first coroutine runs. A fresh process has no live helpers:
@@ -1623,7 +1631,7 @@ class AgentRuntime(
                 }
             }
         } catch (e: CancellationException) { throw e } catch (e: Throwable) {
-            detail = (if (e is Exception) friendlyError(e) else "${e::class.java.simpleName}: ${e.message}").take(300)
+            detail = (if (e is Exception) friendlyError(e, settings.state.value.language) else "${e::class.java.simpleName}: ${e.message}").take(300)
         }
         if (ping.calls == 0 && detail.isBlank()) return null   // engine wasn't there to test
         val result = SelfCheckResult(ping.calls > 0, power, detail)
@@ -1684,25 +1692,32 @@ class AgentRuntime(
             return pretty + (detail.takeIf { it.isNotBlank() }?.let { " · ${it.take(80)}" } ?: "")
         }
 
-        fun labelFor(tool: String) = when {
-            tool.startsWith("browser") -> "Browsing"
-            tool.startsWith("memory") -> "Remembering"
-            tool.startsWith("apps") -> "Using your apps"
-            tool == "delegate" -> "Helpers working"
-            tool == "web_fetch" -> "Reading the web"
-            tool.startsWith("task") || tool.startsWith("goal") -> "Updating tasks"
-            tool.startsWith("routine") -> "Setting up a routine"
-            tool == "ask_user" || tool == "request_approval" -> "Waiting for you"
-            else -> "Working"
+        fun labelFor(tool: String, language: String): String {
+            val en = when {
+                tool.startsWith("browser") -> "Browsing"
+                tool.startsWith("memory") -> "Remembering"
+                tool.startsWith("apps") -> "Using your apps"
+                tool == "delegate" -> "Helpers working"
+                tool == "web_fetch" -> "Reading the web"
+                tool.startsWith("task") || tool.startsWith("goal") -> "Updating tasks"
+                tool.startsWith("routine") -> "Setting up a routine"
+                tool == "ask_user" || tool == "request_approval" -> "Waiting for you"
+                else -> "Working"
+            }
+            return com.past9.phoneaos.ui.i18n.trAny(en, language)
         }
 
-        fun friendlyError(e: Exception): String = when {
-            e is ProviderException && e.status == 401 -> "Your API key was rejected. Check it in Settings."
-            e is ProviderException && e.status == 429 -> "The AI provider says we are sending too much right now (rate limit or out of credit). Try again shortly."
-            e is ProviderException && e.status == HttpPolicy.BLOCKED -> e.message.orEmpty()
-            e is ProviderException && e.status == 0 -> "I could not reach the AI provider. Check your connection."
-            e is ProviderException && e.status == 400 && (e.message ?: "").contains("image", true) -> "This model can't look at images. Pick a vision model in Settings, or send it as text."
-            else -> "Something went wrong: ${e.message?.take(240)}"
+        fun friendlyError(e: Exception, language: String): String {
+            val lang = language
+            val en = when {
+                e is ProviderException && e.status == 401 -> "Your API key was rejected. Check it in Settings."
+                e is ProviderException && e.status == 429 -> "The AI provider says we are sending too much right now (rate limit or out of credit). Try again shortly."
+                e is ProviderException && e.status == HttpPolicy.BLOCKED -> return com.past9.phoneaos.ui.i18n.trAny(e.message.orEmpty(), lang)
+                e is ProviderException && e.status == 0 -> "I could not reach the AI provider. Check your connection."
+                e is ProviderException && e.status == 400 && (e.message ?: "").contains("image", true) -> "This model can't look at images. Pick a vision model in Settings, or send it as text."
+                else -> return com.past9.phoneaos.ui.i18n.I18n.trArgs("Something went wrong: %1\$s", lang, e.message?.take(240) ?: "")
+            }
+            return com.past9.phoneaos.ui.i18n.trAny(en, lang)
         }
     }
 }

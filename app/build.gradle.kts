@@ -58,6 +58,9 @@ android {
       all {
         it.systemProperty("robolectric.graphicsMode", "NATIVE")
         it.systemProperty("robolectric.pixelCopyRenderMode", "hardware")
+        // A read-only home (CI sandboxes) breaks Robolectric's ~/.robolectric-download-lock;
+        // pass -Drobolectric.user.home=<writable dir> on the Gradle command line to relocate it.
+        System.getProperty("robolectric.user.home")?.let { home -> it.systemProperty("user.home", home) }
         // Without this Roborazzi writes nothing and the run still passes green.
         it.systemProperty("roborazzi.test.record", "true")
         it.maxHeapSize = "3g"

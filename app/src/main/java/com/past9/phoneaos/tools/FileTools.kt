@@ -8,6 +8,7 @@ import com.past9.phoneaos.agent.ToolContext
 import com.past9.phoneaos.agent.ToolSpec
 import com.past9.phoneaos.agent.schema
 import com.past9.phoneaos.agent.str
+import com.past9.phoneaos.ui.i18n.I18n
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,13 +31,14 @@ class FilesPickTool(private val context: Context) : Tool {
     override val spec = ToolSpec("files_pick", "Ask the user to pick one or more files from their phone (documents, notes, spreadsheets, photos) and read them. You only see what they choose.",
         schema(listOf("reason"), "reason" to str("What you need, e.g. 'your latest bank statement'")))
     override suspend fun run(input: JSONObject, ctx: ToolContext): String {
-        val a = ctx.ask("Pick ${input.optString("reason")} for me?", listOf("Choose files", "Not now"))
+        val lang = uiLang(context)
+        val a = ctx.ask(I18n.trArgs("Pick %1\$s for me?", lang, input.optString("reason")), listOf("Choose files", "Not now"))
         if (a != "Choose files") return "The user didn't pick any files."
         val r = FilePickBroker.Request(arrayOf("*/*")); FilePickBroker.pending.value = r
-        ctx.notify("Pick a file", "Open the app to choose ${input.optString("reason")}")
+        ctx.notify(I18n.tr("Pick a file", lang), I18n.trArgs("Open the app to choose %1\$s", lang, input.optString("reason")))
         val uris = withTimeoutOrNull(300_000) { r.result.await() }.orEmpty()
         if (uris.isEmpty()) return "No files picked."
-        return withContext(Dispatchers.IO) { uris.map { read(it) }.map { ocrPages(it) }.joinToString("\n\n") }.also { ctx.activity("Read ${uris.size} file${if (uris.size > 1) "s" else ""} you picked", JSONObject().put("tool", "files")) }
+        return withContext(Dispatchers.IO) { uris.map { read(it) }.map { ocrPages(it) }.joinToString("\n\n") }.also { ctx.activity(I18n.trArgs(if (uris.size == 1) "Read %1\$d file you picked" else "Read %1\$d files you picked", lang, uris.size), JSONObject().put("tool", "files")) }
     }
 
     /** A document the user attached in chat: its text (OCR'd if scanned) plus any page images. */

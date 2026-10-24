@@ -15,12 +15,17 @@ import com.past9.phoneaos.agent.schema
 import com.past9.phoneaos.agent.str
 import com.past9.phoneaos.data.SettingsStore
 import com.past9.phoneaos.system.PermissionBroker
+import com.past9.phoneaos.App
+import com.past9.phoneaos.ui.i18n.I18n
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 import kotlin.coroutines.resume
+
+/** The language the user runs the app in, for the questions and activity lines the tools put in front of them. */
+internal fun uiLang(context: Context): String = App.graph(context).settings.state.value.language
 
 /**
  * Phone permissions stay OFF until the agent actually needs one. It asks in plain words, the
@@ -34,7 +39,7 @@ class LocationTool(private val context: Context) : Tool {
     override suspend fun run(input: JSONObject, ctx: ToolContext): String {
         val perms = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
         if (!PermissionBroker.granted(context, perms)) {
-            val a = ctx.ask("Can I use your location so I can ${input.optString("reason").removePrefix("so I can ")}?", listOf("Allow this time", "No"))
+            val a = ctx.ask(I18n.trArgs("Can I use your location so I can %1\$s?", uiLang(context), input.optString("reason").removePrefix("so I can ")), listOf("Allow this time", "No"))
             if (a != "Allow this time") return "The user said no to location. Ask them for the address instead."
             val ok = PermissionBroker.request(context, perms) { ctx.notifyBlocking("Allow location?", "Open the app to let your agent use your location") }
             if (!ok) return "Location permission wasn't granted. Ask the user for the address instead."
@@ -48,7 +53,7 @@ class LocationTool(private val context: Context) : Tool {
         val address = withContext(Dispatchers.IO) {
             runCatching { @Suppress("DEPRECATION") Geocoder(context).getFromLocation(loc.latitude, loc.longitude, 1)?.firstOrNull()?.getAddressLine(0) }.getOrNull()
         }
-        ctx.updateActivity(id, "Got your location${address?.let { ": ${it.substringBefore(',')}" } ?: ""}")
+        ctx.updateActivity(id, address?.let { I18n.trArgs("Got your location: %1\$s", uiLang(context), it.substringBefore(',')) } ?: I18n.tr("Got your location", uiLang(context)))
         return "Lat ${"%.5f".format(loc.latitude)}, lng ${"%.5f".format(loc.longitude)} (±${loc.accuracy.toInt()} m)" + (address?.let { ". Address: $it" } ?: "")
     }
 
@@ -72,10 +77,10 @@ class NotificationsAllowTool(private val context: Context, private val settings:
         val hit = apps.firstOrNull { it.second.equals(want, true) } ?: apps.firstOrNull { it.second.contains(want, true) || it.first.contains(want, true) }
             ?: return "No app called \"$want\" on this phone. Installed apps include: ${apps.take(40).joinToString { it.second }}"
         if (hit.first in settings.state.value.notifApps) return "Already reading ${hit.second}."
-        val a = ctx.ask("Can I read your ${hit.second} notifications so I can ${input.optString("reason").removePrefix("so I can ")}?", listOf("Allow", "No"))
+        val a = ctx.ask(I18n.trArgs("Can I read your %1\$s notifications so I can %2\$s?", uiLang(context), hit.second, input.optString("reason").removePrefix("so I can ")), listOf("Allow", "No"))
         if (a != "Allow") return "The user said no."
         settings.setNotifApp(hit.first, true)
-        ctx.activity("Now reading ${hit.second} notifications", JSONObject().put("tool", "notifications"))
+        ctx.activity(I18n.trArgs("Now reading %1\$s notifications", uiLang(context), hit.second), JSONObject().put("tool", "notifications"))
         val access = androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
         return "Allowed ${hit.second}." + if (!access) " BUT notification access is still off for this app in Android settings; tell the user to open Connections, Read my notifications, and switch it on." else ""
     }
@@ -123,7 +128,7 @@ class PhotosTool(private val context: Context) : Tool {
                     d.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE }
                 java.io.File(context.filesDir, "uploads/gallery-${System.nanoTime()}.jpg").apply { parentFile?.mkdirs(); outputStream().use { bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, it) } }.path
             }.getOrNull() } ?: return@mapNotNull null
-            ctx.activity("Looked at $name", JSONObject().put("tool", "photos").put("image", path))
+            ctx.activity(I18n.trArgs("Looked at %1\$s", uiLang(context), name), JSONObject().put("tool", "photos").put("image", path))
             val words = Ocr.text(path).take(4000)
             "$name, added ${java.time.Instant.ofEpochSecond(added).atZone(java.time.ZoneId.systemDefault()).toLocalDateTime()}: [[image:$path]]" + if (words.isNotBlank()) "\nText in it: $words" else ""
         }
@@ -145,7 +150,7 @@ class WaitForCodeTool(private val db: com.past9.phoneaos.data.AppDb, private val
             val r = allow.run(JSONObject().put("app", app).put("reason", "catch the sign-in code and finish logging in"), ctx)
             if (r.startsWith("The user said no") || r.startsWith("No app")) return r
         }
-        val id = ctx.activity("Waiting for the code from $app", JSONObject().put("tool", "notifications"))
+        val id = ctx.activity(I18n.trArgs("Waiting for the code from %1\$s", settings.state.value.language, app), JSONObject().put("tool", "notifications"))
         val deadline = System.currentTimeMillis() + input.optInt("seconds", 90).coerceIn(10, 300) * 1000L
         val code = Regex("""(?<![\d-])(\d{4,8})(?![\d-])""")
         while (System.currentTimeMillis() < deadline) {
@@ -153,7 +158,7 @@ class WaitForCodeTool(private val db: com.past9.phoneaos.data.AppDb, private val
                 .forEach { n ->
                     val text = n.title + " " + n.text
                     if (Regex("(?i)code|otp|verif|pin|one-time|login|sign").containsMatchIn(text)) code.find(text)?.let {
-                        ctx.updateActivity(id, "Got the code from ${n.app}"); return "Code: ${it.groupValues[1]} (from ${n.app}: \"${text.take(160)}\")"
+                        ctx.updateActivity(id, I18n.trArgs("Got the code from %1\$s", settings.state.value.language, n.app)); return "Code: ${it.groupValues[1]} (from ${n.app}: \"${text.take(160)}\")"
                     }
                 }
             kotlinx.coroutines.delay(2000)

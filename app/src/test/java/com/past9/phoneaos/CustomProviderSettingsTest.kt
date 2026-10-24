@@ -75,6 +75,6 @@ class CustomProviderSettingsTest {
         val reason = HttpPolicy.blockReason("", false)
         assertNotNull(reason); assertTrue(reason!!.contains("address", true))
         val e = runCatching { HttpPolicy.check("", false) }.exceptionOrNull() as ProviderException
-        assertNotEquals("I could not reach the AI provider. Check your connection.", com.past9.phoneaos.agent.AgentRuntime.friendlyError(e))
+        assertNotEquals("I could not reach the AI provider. Check your connection.", com.past9.phoneaos.agent.AgentRuntime.friendlyError(e, "fa"))
     }
 }

@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
+import com.past9.phoneaos.ui.i18n.tr
 import com.past9.phoneaos.ui.theme.Eyebrow
 
 /** Draws a [Morph] at a given progress, scaled to the layout bounds. */
@@ -182,7 +183,7 @@ fun SubScreen(title: String, subtitle: String?, onBack: () -> Unit, actions: @Co
                 modifier = Modifier.padding(horizontal = com.past9.phoneaos.ui.sidePad(16.dp) - 16.dp),
                 title = { Text(title) },
                 subtitle = subtitle?.let { { Text(it) } },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, tr("Back")) } },
                 actions = actions,
                 scrollBehavior = scroll,
                 // On a wide screen the bar is inset to the content column, so it keeps one colour: a tinted band in the middle would read as a frame.
@@ -214,11 +215,13 @@ fun StatusPill(text: String, container: Color, content: Color, modifier: Modifie
     }
 }
 
-fun relativeTime(ms: Long, now: Long = System.currentTimeMillis()): String {
+fun relativeTime(ms: Long, now: Long = System.currentTimeMillis(), language: String = "en"): String {
     val d = (now - ms) / 1000
     return when {
-        d < 60 -> "just now"; d < 3600 -> "${d / 60} min ago"; d < 86400 -> "${d / 3600} h ago"
-        d < 7 * 86400 -> "${d / 86400} d ago"
+        d < 60 -> com.past9.phoneaos.ui.i18n.I18n.tr("just now", language)
+        d < 3600 -> com.past9.phoneaos.ui.i18n.I18n.trArgs("%1\$s min ago", language, "${d / 60}")
+        d < 86400 -> com.past9.phoneaos.ui.i18n.I18n.trArgs("%1\$s h ago", language, "${d / 3600}")
+        d < 7 * 86400 -> com.past9.phoneaos.ui.i18n.I18n.trArgs("%1\$s d ago", language, "${d / 86400}")
         else -> java.time.Instant.ofEpochMilli(ms).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("d MMM"))
     }
 }

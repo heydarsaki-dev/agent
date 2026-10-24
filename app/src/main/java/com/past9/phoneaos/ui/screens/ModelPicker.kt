@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.past9.phoneaos.agent.ModelInfo
 import com.past9.phoneaos.ui.StatusPill
+import com.past9.phoneaos.ui.i18n.tr
 import com.past9.phoneaos.ui.theme.Eyebrow
 import java.time.LocalDate
 
@@ -26,30 +27,30 @@ fun ModelPickerSheet(title: String, models: List<ModelInfo>?, current: String, e
     val recent = LocalDate.now().minusDays(150).toString()
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 16.dp)) {
-            Text("MODEL", style = Eyebrow, color = cs.primary)
-            Text(title, style = MaterialTheme.typography.headlineSmall)
-            Text(subtitle ?: "Pulled live from your provider. Newest first.", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+            Text(tr("MODEL"), style = Eyebrow, color = cs.primary)
+            Text(tr(title), style = MaterialTheme.typography.headlineSmall)
+            Text(tr(subtitle ?: "Pulled live from your provider. Newest first."), style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
             Spacer(Modifier.height(12.dp))
-            if ((models?.size ?: 0) > 10) OutlinedTextField(q, { q = it }, placeholder = { Text("Search models") }, leadingIcon = { Icon(Icons.Rounded.Search, null) }, singleLine = true,
+            if ((models?.size ?: 0) > 10) OutlinedTextField(q, { q = it }, placeholder = { Text(tr("Search models")) }, leadingIcon = { Icon(Icons.Rounded.Search, null) }, singleLine = true,
                 modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge)
         }
         when {
             error != null -> Text(error, Modifier.padding(20.dp), color = cs.error)
             models == null -> Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { LoadingIndicator() }
-            models.isEmpty() -> Text("No models came back for this account.", Modifier.padding(20.dp), color = cs.onSurfaceVariant)
+            models.isEmpty() -> Text(tr("No models came back for this account."), Modifier.padding(20.dp), color = cs.onSurfaceVariant)
             else -> LazyColumn(Modifier.fillMaxWidth().heightIn(max = 560.dp), contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 32.dp)) {
                 items(models.filter { q.isBlank() || it.name.contains(q, true) || it.id.contains(q, true) }, key = { it.id.ifBlank { "default" } }) { m ->
                     val sel = m.id == current
                     Surface(onClick = { onPick(m) }, shape = MaterialTheme.shapes.large, color = if (sel) cs.primaryContainer else androidx.compose.ui.graphics.Color.Transparent, modifier = Modifier.fillMaxWidth()) {
                         Row(Modifier.padding(horizontal = 12.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
-                                Text(m.name, style = MaterialTheme.typography.titleMedium, color = if (sel) cs.onPrimaryContainer else cs.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                val sub = listOfNotNull(m.note.takeIf { it.isNotBlank() }, m.id.takeIf { it.isNotBlank() && it != m.name }, m.released.takeIf { it.isNotBlank() }).joinToString(" · ")
+                                Text(tr(m.name), style = MaterialTheme.typography.titleMedium, color = if (sel) cs.onPrimaryContainer else cs.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                val sub = listOfNotNull(m.note.takeIf { it.isNotBlank() }?.let { tr(it) }, m.id.takeIf { it.isNotBlank() && it != m.name }, m.released.takeIf { it.isNotBlank() }).joinToString(" · ")
                                 if (sub.isNotBlank()) Text(sub, style = MaterialTheme.typography.bodySmall, color = if (sel) cs.onPrimaryContainer else cs.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             }
-                            if (m.released >= recent && m.released.isNotBlank()) StatusPill("New", cs.tertiaryContainer, cs.onTertiaryContainer, Modifier.padding(start = 6.dp))
-                            if (m.vision) Icon(Icons.Rounded.Image, "Sees images", Modifier.padding(start = 8.dp).size(18.dp), tint = if (sel) cs.onPrimaryContainer else cs.onSurfaceVariant)
-                            if (sel) Icon(Icons.Rounded.Check, "Selected", Modifier.padding(start = 8.dp), tint = cs.onPrimaryContainer)
+                            if (m.released >= recent && m.released.isNotBlank()) StatusPill(tr("New"), cs.tertiaryContainer, cs.onTertiaryContainer, Modifier.padding(start = 6.dp))
+                            if (m.vision) Icon(Icons.Rounded.Image, tr("Sees images"), Modifier.padding(start = 8.dp).size(18.dp), tint = if (sel) cs.onPrimaryContainer else cs.onSurfaceVariant)
+                            if (sel) Icon(Icons.Rounded.Check, tr("Selected"), Modifier.padding(start = 8.dp), tint = cs.onPrimaryContainer)
                         }
                     }
                 }

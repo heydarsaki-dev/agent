@@ -1,6 +1,8 @@
 package com.past9.phoneaos.ui.openui
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.automirrored.rounded.TrendingDown
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
@@ -59,7 +61,7 @@ object OpenUiIcons {
         listOf("photo", "image", "picture", "camera") to Icons.Rounded.Image,
         listOf("music", "song", "play", "audio", "track") to Icons.Rounded.MusicNote,
         listOf("health", "doctor", "heart", "medical") to Icons.Rounded.Favorite,
-        listOf("book", "read", "study", "learn", "school", "course") to Icons.Rounded.MenuBook,
+        listOf("book", "read", "study", "learn", "school", "course") to Icons.AutoMirrored.Rounded.MenuBook,
     ) }
 
     /** The icon for a Lucide-style name or a free label; null when nothing fits. */
@@ -76,7 +78,7 @@ object OpenUiIcons {
     fun forTextOr(text: String?, fallback: ImageVector = Icons.Rounded.Insights): ImageVector = forText(text) ?: fallback
 
     /** A button that only opens or shows something ("Details", "Open listing"), as opposed to one that decides or sends. */
-    fun navigates(label: String?): Boolean = forAction(label) == Icons.Rounded.OpenInNew
+    fun navigates(label: String?): Boolean = forAction(label) == Icons.AutoMirrored.Rounded.OpenInNew
 
     /** The leading icon for an action button, from its label. */
     fun forAction(label: String?): ImageVector? {
@@ -85,7 +87,7 @@ object OpenUiIcons {
             Regex("approve|confirm|accept|yes|done|ok\\b|allow").containsMatchIn(t) -> Icons.Rounded.Check
             Regex("decline|reject|cancel|no\\b|deny|dismiss|skip").containsMatchIn(t) -> Icons.Rounded.Close
             Regex("book|schedule|viewing|reserve|appointment").containsMatchIn(t) -> Icons.Rounded.Event
-            Regex("open|view|see|visit|read|details|listing|link").containsMatchIn(t) -> Icons.Rounded.OpenInNew
+            Regex("open|view|see|visit|read|details|listing|link").containsMatchIn(t) -> Icons.AutoMirrored.Rounded.OpenInNew
             Regex("call|phone|ring").containsMatchIn(t) -> Icons.Rounded.Call
             Regex("boarding|ticket|pass\\b").containsMatchIn(t) -> Icons.Rounded.ConfirmationNumber
             Regex("cart|basket|bag").containsMatchIn(t) -> Icons.Rounded.AddShoppingCart

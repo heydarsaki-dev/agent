@@ -21,6 +21,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.*
@@ -53,6 +54,10 @@ import com.past9.phoneaos.ui.theme.Accents
 import com.past9.phoneaos.ui.theme.AppTheme
 import com.past9.phoneaos.ui.theme.Eyebrow
 import com.past9.phoneaos.ui.theme.LocalExtra
+import com.past9.phoneaos.ui.i18n.I18n
+import com.past9.phoneaos.ui.i18n.LocalLanguage
+import com.past9.phoneaos.ui.i18n.tr
+import com.past9.phoneaos.ui.i18n.trAny
 import kotlinx.coroutines.launch
 
 /** Everything onboarding needs from the outside world, so the screen stays testable. */
@@ -103,7 +108,7 @@ fun OnboardingScreen(actions: OnboardingActions, start: OnbStep = OnbStep.HELLO,
             Column(Modifier.fillMaxSize().imePadding()) {
                 if (step != OnbStep.HELLO) {
                     Row(Modifier.fillMaxWidth().statusBarsPadding().height(56.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        if (back != null) IconButton(onClick = back) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") }
+                        if (back != null) IconButton(onClick = back) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, tr("Back")) }
                         Spacer(Modifier.weight(1f))
                         val idx = order.indexOf(if (step == OnbStep.SUB) OnbStep.KEY else step)
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(end = 16.dp)) {
@@ -191,26 +196,26 @@ private fun Hello(next: () -> Unit) {
                 AgentAvatar(working = true, size = 156.dp)
                 Spacer(Modifier.height(18.dp))
                 Surface(shape = RoundedCornerShape(50), color = cs.surface.copy(alpha = 0.9f)) {
-                    Text("Hi! I'm your agent.", Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = MaterialTheme.typography.titleSmall, color = cs.onSurface)
+                    Text(tr("Hi! I'm your agent."), Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = MaterialTheme.typography.titleSmall, color = cs.onSurface)
                 }
             }
         }
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 20.dp)) {
-            Text("MEET YOUR AGENT", style = Eyebrow, color = cs.primary)
+            Text(tr("MEET YOUR AGENT"), style = Eyebrow, color = cs.primary)
             Spacer(Modifier.height(10.dp))
-            Text("It does the busywork.\nYou get your day back.", style = MaterialTheme.typography.displaySmall)
+            Text(tr("It does the busywork.\nYou get your day back."), style = MaterialTheme.typography.displaySmall)
             Spacer(Modifier.height(12.dp))
-            Text("It browses, plans, remembers and follows up, right here on your phone. Even while you're in other apps.", style = MaterialTheme.typography.bodyLarge, color = cs.onSurfaceVariant)
+            Text(tr("It browses, plans, remembers and follows up, right here on your phone. Even while you're in other apps."), style = MaterialTheme.typography.bodyLarge, color = cs.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
-            Text("It uses its own built-in browser and can't control your Chrome tabs, so you sign in to your sites inside it.", style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
+            Text(tr("It uses its own built-in browser and can't control your Chrome tabs, so you sign in to your sites inside it."), style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
             Spacer(Modifier.height(14.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.Lock, null, Modifier.size(16.dp), tint = cs.primary)
                 Spacer(Modifier.width(8.dp))
-                Text("Your keys. Your phone. No servers of ours.", style = MaterialTheme.typography.labelLarge, color = cs.onSurfaceVariant)
+                Text(tr("Your keys. Your phone. No servers of ours."), style = MaterialTheme.typography.labelLarge, color = cs.onSurfaceVariant)
             }
             Spacer(Modifier.height(22.dp))
-            BigButton("Get started", onClick = next)
+            BigButton(tr("Get started"), onClick = next)
         }
     }
 }
@@ -234,21 +239,21 @@ private fun BigField(value: String, onChange: (String) -> Unit, placeholder: Str
 
 @Composable
 private fun NameStep(user: String, agent: String, onUser: (String) -> Unit, onAgent: (String) -> Unit, next: () -> Unit) {
-    StepPage("About you", "First, what should I call you?", null, bottom = { BigButton("Continue", enabled = user.isNotBlank(), onClick = next) }) {
-        BigField(user, onUser, "Your name", big = true, autoFocus = true)
+    StepPage(tr("About you"), tr("First, what should I call you?"), null, bottom = { BigButton(tr("Continue"), enabled = user.isNotBlank(), onClick = next) }) {
+        BigField(user, onUser, tr("Your name"), big = true, autoFocus = true)
         Spacer(Modifier.height(36.dp))
-        Text("AND WHAT SHOULD YOU CALL ME?", style = Eyebrow, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(tr("AND WHAT SHOULD YOU CALL ME?"), style = Eyebrow, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(10.dp))
-        BigField(agent, onAgent, "Your agent", big = false)
+        BigField(agent, onAgent, tr("Your agent"), big = false)
         Spacer(Modifier.height(8.dp))
-        Text("Optional. Give me a name if you like.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(tr("Optional. Give me a name if you like."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(32.dp))
         AnimatedVisibility(user.isNotBlank()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AgentAvatar(working = false, size = 44.dp)
                 Spacer(Modifier.width(12.dp))
                 Surface(shape = RoundedCornerShape(6.dp, 22.dp, 22.dp, 22.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-                    Text("Nice to meet you, ${user.trim()}.${if (agent.isNotBlank()) " I'm ${agent.trim()}." else ""}", Modifier.padding(horizontal = 16.dp, vertical = 12.dp), style = MaterialTheme.typography.bodyLarge)
+                    Text(I18n.trArgs("Nice to meet you, %1\$s.", LocalLanguage.current, user.trim()) + (if (agent.isNotBlank()) I18n.trArgs(" I'm %1\$s.", LocalLanguage.current, agent.trim()) else ""), Modifier.padding(horizontal = 16.dp, vertical = 12.dp), style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }
@@ -257,7 +262,7 @@ private fun NameStep(user: String, agent: String, onUser: (String) -> Unit, onAg
 
 @Composable
 private fun StyleStep(user: String, agent: String, accent: String, mascot: String, onAccent: (String) -> Unit, onMascot: (String) -> Unit, next: () -> Unit) {
-    StepPage("Make it yours", "Pick your colour and your sidekick", null, bottom = { BigButton("Looks good", onClick = next) }) {
+    StepPage(tr("Make it yours"), tr("Pick your colour and your sidekick"), null, bottom = { BigButton(tr("Looks good"), onClick = next) }) {
         StylePicker(user, agent, accent, mascot, onAccent, onMascot)
     }
 }
@@ -274,26 +279,26 @@ fun StylePicker(user: String, agent: String, accent: String, mascot: String, onA
                     AgentAvatar(working = true, size = 40.dp)
                     Spacer(Modifier.width(12.dp))
                     Column {
-                        Text(agent.ifBlank { "Your agent" }, style = MaterialTheme.typography.titleMedium)
-                        Text("Browsing · 2 helpers", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+                        Text(agent.ifBlank { tr("Your agent") }, style = MaterialTheme.typography.titleMedium)
+                        Text(tr("Browsing · 2 helpers"), style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
                     }
                 }
                 Spacer(Modifier.height(14.dp))
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
                     Surface(color = cs.primaryContainer, shape = RoundedCornerShape(22.dp, 22.dp, 6.dp, 22.dp)) {
-                        Text("Find me a quiet café near work", Modifier.padding(horizontal = 14.dp, vertical = 10.dp), color = cs.onPrimaryContainer)
+                        Text(tr("Find me a quiet café near work"), Modifier.padding(horizontal = 14.dp, vertical = 10.dp), color = cs.onPrimaryContainer)
                     }
                 }
                 Spacer(Modifier.height(10.dp))
-                Text("On it${if (user.isNotBlank()) ", ${user.trim()}" else ""}. Three with good Wi-Fi, all under 10 minutes away.", style = MaterialTheme.typography.bodyLarge)
+                Text(trAny("On it", LocalLanguage.current) + (if (user.isNotBlank()) I18n.trArgs(", %1\$s", LocalLanguage.current, user.trim()) else "") + trAny(". Three with good Wi-Fi, all under 10 minutes away.", LocalLanguage.current), style = MaterialTheme.typography.bodyLarge)
                 Spacer(Modifier.height(12.dp))
                 Surface(color = cs.primary, shape = RoundedCornerShape(50)) {
-                    Text("Hold to approve", Modifier.padding(horizontal = 18.dp, vertical = 10.dp), color = cs.onPrimary, style = MaterialTheme.typography.labelLarge)
+                    Text(tr("Hold to approve"), Modifier.padding(horizontal = 18.dp, vertical = 10.dp), color = cs.onPrimary, style = MaterialTheme.typography.labelLarge)
                 }
             }
         }
         Spacer(Modifier.height(28.dp))
-        Text("YOUR COLOUR", style = Eyebrow, color = cs.onSurfaceVariant)
+        Text(tr("YOUR COLOUR"), style = Eyebrow, color = cs.onSurfaceVariant)
         Spacer(Modifier.height(12.dp))
         val dark = cs.surface.luminance() < 0.5f
         FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -303,15 +308,15 @@ fun StylePicker(user: String, agent: String, accent: String, mascot: String, onA
                 val morph = remember { Morph(MaterialShapes.Circle.unit(), MaterialShapes.Cookie9Sided.unit()) }
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(64.dp).clickable { onAccent(a.id) }) {
                     Box(Modifier.size(52.dp).graphicsLayer { rotationZ = p * 20f; val s = 1f + 0.08f * p; scaleX = s; scaleY = s }.clip(MorphShape(morph, p)).background(if (dark) a.dP else a.lP), contentAlignment = Alignment.Center) {
-                        if (selected) Icon(Icons.Rounded.Check, "${a.label}, selected", tint = if (dark) a.dOnP else a.lOnP, modifier = Modifier.graphicsLayer { rotationZ = -p * 20f })
+                        if (selected) Icon(Icons.Rounded.Check, I18n.trArgs("%1\$s, selected", LocalLanguage.current, trAny(a.label, LocalLanguage.current)), tint = if (dark) a.dOnP else a.lOnP, modifier = Modifier.graphicsLayer { rotationZ = -p * 20f })
                     }
                     Spacer(Modifier.height(4.dp))
-                    Text(a.label, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false, color = if (selected) cs.onSurface else cs.onSurfaceVariant)
+                    Text(tr(a.label), style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false, color = if (selected) cs.onSurface else cs.onSurfaceVariant)
                 }
             }
         }
         Spacer(Modifier.height(28.dp))
-        Text("YOUR SIDEKICK", style = Eyebrow, color = cs.onSurfaceVariant)
+        Text(tr("YOUR SIDEKICK"), style = Eyebrow, color = cs.onSurfaceVariant)
         Spacer(Modifier.height(12.dp))
         Mascots.chunked(3).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -323,7 +328,7 @@ fun StylePicker(user: String, agent: String, accent: String, mascot: String, onA
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                             AgentAvatar(working = selected, mascot = m.id, size = 52.dp)
                             Spacer(Modifier.height(8.dp))
-                            Text(m.label, style = MaterialTheme.typography.labelLarge, color = if (selected) cs.onPrimaryContainer else cs.onSurfaceVariant)
+                            Text(tr(m.label), style = MaterialTheme.typography.labelLarge, color = if (selected) cs.onPrimaryContainer else cs.onSurfaceVariant)
                         }
                     }
                 }
@@ -343,8 +348,8 @@ private fun subMark(k: SubKind): Pair<Color, RoundedPolygon> = when (k) {
 @Composable
 private fun PowerStep(available: (SubKind) -> Boolean, onKey: () -> Unit, onSub: (SubKind) -> Unit) {
     val cs = MaterialTheme.colorScheme
-    StepPage("Power", "How do you want to power your agent?", "Your agent thinks with an AI you already pay for. You can switch any time.", bottom = {}) {
-        Text("USE A SUBSCRIPTION YOU ALREADY HAVE", style = Eyebrow, color = cs.onSurfaceVariant)
+    StepPage(tr("Power"), tr("How do you want to power your agent?"), tr("Your agent thinks with an AI you already pay for. You can switch any time."), bottom = {}) {
+        Text(tr("USE A SUBSCRIPTION YOU ALREADY HAVE"), style = Eyebrow, color = cs.onSurfaceVariant)
         Spacer(Modifier.height(10.dp))
         Surface(shape = MaterialTheme.shapes.extraLarge, color = cs.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(vertical = 6.dp)) {
@@ -355,8 +360,9 @@ private fun PowerStep(available: (SubKind) -> Boolean, onKey: () -> Unit, onSub:
                         Box(Modifier.size(44.dp).clip(MorphShape(morph, 0f)).background(c))
                         Spacer(Modifier.width(16.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("${k.label} ${k.plan}", style = MaterialTheme.typography.titleMedium)
-                            Text(if (available(k) || k == SubKind.OPENCODE) k.line else "${k.line.substringBefore(" on ")} on your plan. Needs the runtime pack.", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+                            val lang = LocalLanguage.current
+                            Text("${k.label} ${trAny(k.plan, lang)}", style = MaterialTheme.typography.titleMedium)
+                            Text(if (available(k) || k == SubKind.OPENCODE) tr(k.line) else I18n.trArgs("%1\$s on your plan. Needs the runtime pack.", lang, trAny(k.line.substringBefore(" on "), lang)), style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
                         }
                         Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = cs.onSurfaceVariant)
                     }
@@ -365,19 +371,19 @@ private fun PowerStep(available: (SubKind) -> Boolean, onKey: () -> Unit, onSub:
             }
         }
         Spacer(Modifier.height(24.dp))
-        Text("OR BRING AN API KEY", style = Eyebrow, color = cs.onSurfaceVariant)
+        Text(tr("OR BRING AN API KEY"), style = Eyebrow, color = cs.onSurfaceVariant)
         Spacer(Modifier.height(10.dp))
         Surface(onClick = onKey, shape = MaterialTheme.shapes.extraLarge, color = cs.primaryContainer, modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(20.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Rounded.Key, null, tint = cs.onPrimaryContainer)
                     Spacer(Modifier.width(12.dp))
-                    Text("I have an API key", style = MaterialTheme.typography.titleLarge, color = cs.onPrimaryContainer, modifier = Modifier.weight(1f))
-                    Text("FASTEST", style = Eyebrow, color = cs.onPrimaryContainer)
+                    Text(tr("I have an API key"), style = MaterialTheme.typography.titleLarge, color = cs.onPrimaryContainer, modifier = Modifier.weight(1f))
+                    Text(tr("FASTEST"), style = Eyebrow, color = cs.onPrimaryContainer)
                 }
                 Spacer(Modifier.height(12.dp))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("Anthropic", "OpenAI", "Gemini", "DeepSeek", "OpenRouter", "Any OpenAI-compatible").forEach {
+                    listOf("Anthropic", "OpenAI", "Gemini", "DeepSeek", "OpenRouter", tr("Any OpenAI-compatible")).forEach {
                         Surface(shape = RoundedCornerShape(50), color = cs.surface.copy(alpha = 0.7f)) { Text(it, Modifier.padding(horizontal = 12.dp, vertical = 6.dp), style = MaterialTheme.typography.labelMedium) }
                     }
                 }
@@ -449,8 +455,8 @@ fun KeyStep(provider: Provider, onProvider: (Provider) -> Unit, actions: Onboard
     val plainHttp = custom && com.past9.phoneaos.agent.HttpPolicy.isHttp(baseUrl) && !com.past9.phoneaos.agent.HttpPolicy.isLoopback(baseUrl)
     val urlProblem = if (custom && baseUrl.isNotBlank()) com.past9.phoneaos.agent.HttpPolicy.blockReason(baseUrl, allowHttp) else null
     val ready = key.length > 10 && (!custom || (baseUrl.isNotBlank() && urlProblem == null && model.isNotBlank()))
-    StepPage("API key", "Paste your key", "Stored encrypted on this phone. Only ever sent to ${if (custom) "the service you enter" else provider.label}.", bottom = {
-        BigButton(if (result == "") "Continue" else if (busy) "Checking…" else "Check key", enabled = ready && !busy, icon = if (result == "") Icons.AutoMirrored.Rounded.ArrowForward else null) {
+    StepPage(tr("API key"), tr("Paste your key"), I18n.trArgs("Stored encrypted on this phone. Only ever sent to %1\$s.", LocalLanguage.current, if (custom) trAny("the service you enter", LocalLanguage.current) else provider.label), bottom = {
+        BigButton(if (result == "") tr("Continue") else if (busy) tr("Checking…") else tr("Check key"), enabled = ready && !busy, icon = if (result == "") Icons.AutoMirrored.Rounded.ArrowForward else null) {
             if (result == "") { actions.saveKey(provider, key); (picked ?: models?.firstOrNull())?.let { actions.saveModel(it.id) }; next() }
             else scope.launch {
                 busy = true
@@ -463,13 +469,13 @@ fun KeyStep(provider: Provider, onProvider: (Provider) -> Unit, actions: Onboard
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Provider.entries.forEach { p ->
                 val sel = p == provider
-                FilterChip(selected = sel, onClick = { onProvider(p) }, label = { Text(if (p == Provider.CUSTOM) "Other" else p.label.removePrefix("Google ")) },
+                FilterChip(selected = sel, onClick = { onProvider(p) }, label = { Text(if (p == Provider.CUSTOM) tr("Other") else p.label.removePrefix("Google ")) },
                     leadingIcon = if (sel) ({ Icon(Icons.Rounded.Check, null, Modifier.size(18.dp)) }) else null, shape = RoundedCornerShape(50), modifier = Modifier.height(40.dp))
             }
         }
         Spacer(Modifier.height(20.dp))
         if (custom) {
-            OutlinedTextField(baseUrl, { baseUrl = it.trim(); result = null }, label = { Text("Base URL") }, placeholder = { Text("https://api.example.com/v1") }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium,
+            OutlinedTextField(baseUrl, { baseUrl = it.trim(); result = null }, label = { Text(tr("Base URL")) }, placeholder = { Text("https://api.example.com/v1") }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium,
                 isError = urlProblem != null && !plainHttp, supportingText = urlProblem?.takeIf { !plainHttp }?.let { ({ Text(it, color = MaterialTheme.colorScheme.error) }) })
             if (plainHttp) {
                 Spacer(Modifier.height(10.dp))
@@ -478,28 +484,28 @@ fun KeyStep(provider: Provider, onProvider: (Provider) -> Unit, actions: Onboard
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Rounded.Warning, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onErrorContainer)
                             Spacer(Modifier.width(8.dp))
-                            Text("This address isn't encrypted", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onErrorContainer)
+                            Text(tr("This address isn't encrypted"), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onErrorContainer)
                         }
                         Row(Modifier.fillMaxWidth().clickable { allowHttp = !allowHttp; result = null }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(allowHttp, { allowHttp = it; result = null })
-                            Text("Allow unencrypted HTTP for this server. Requests and your API key are sent in plain text. Only use this on a network you trust, like your home LAN.",
+                            Text(tr("Allow unencrypted HTTP for this server. Requests and your API key are sent in plain text. Only use this on a network you trust, like your home LAN."),
                                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onErrorContainer)
                         }
-                        if (!allowHttp) Text("Plain HTTP is blocked until you tick the box. Or use an https:// address.", style = MaterialTheme.typography.bodySmall,
+                        if (!allowHttp) Text(tr("Plain HTTP is blocked until you tick the box. Or use an https:// address."), style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.padding(start = 12.dp, bottom = 8.dp))
                     }
                 }
             }
             Spacer(Modifier.height(10.dp))
-            OutlinedTextField(model, { model = it.trim(); result = null }, label = { Text("Model") }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium)
+            OutlinedTextField(model, { model = it.trim(); result = null }, label = { Text(tr("Model")) }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium)
             Spacer(Modifier.height(10.dp))
         }
-        OutlinedTextField(key, { key = it.trim(); result = null }, label = { Text("${if (custom) "Service" else provider.label} API key") }, placeholder = { Text(provider.keyHint) }, singleLine = true,
+        OutlinedTextField(key, { key = it.trim(); result = null }, label = { Text(I18n.trArgs(if (custom) "Service API key" else "%1\$s API key", LocalLanguage.current, if (custom) trAny("Service", LocalLanguage.current) else provider.label)) }, placeholder = { Text(provider.keyHint) }, singleLine = true,
             visualTransformation = if (show) VisualTransformation.None else PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium,
-            trailingIcon = { IconButton(onClick = { show = !show }) { Icon(if (show) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, if (show) "Hide key" else "Show key") } },
+            trailingIcon = { IconButton(onClick = { show = !show }) { Icon(if (show) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, if (show) tr("Hide key") else tr("Show key")) } },
             supportingText = when (result) {
                 null -> null
-                "" -> ({ Text("Key works.", color = extra.success) })
+                "" -> ({ Text(tr("Key works."), color = extra.success) })
                 else -> ({ Text(result!!, color = MaterialTheme.colorScheme.error) })
             })
         if (result == "" && !custom) {
@@ -507,25 +513,25 @@ fun KeyStep(provider: Provider, onProvider: (Provider) -> Unit, actions: Onboard
             Surface(onClick = { picking = true }, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text("MODEL", style = Eyebrow, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text(tr("MODEL"), style = Eyebrow, color = MaterialTheme.colorScheme.onPrimaryContainer)
                         Text(picked?.name ?: models?.firstOrNull()?.name ?: provider.defaultModel, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
                     }
-                    Text("Change", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text(tr("Change"), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
                 }
             }
         }
-        if (picking) ModelPickerSheet("Pick your model", models, picked?.id ?: "", null, onPick = { picked = it; actions.saveModel(it.id); picking = false }, onDismiss = { picking = false })
+        if (picking) ModelPickerSheet(tr("Pick your model"), models, picked?.id ?: "", null, onPick = { picked = it; actions.saveModel(it.id); picking = false }, onDismiss = { picking = false })
         Spacer(Modifier.height(16.dp))
         val (url, steps) = keySteps.getValue(provider)
         Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(20.dp)) {
-                Text("WHERE TO GET ONE", style = Eyebrow, color = MaterialTheme.colorScheme.primary)
+                Text(tr("WHERE TO GET ONE"), style = Eyebrow, color = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.height(10.dp))
-                steps.forEachIndexed { i, s -> NumberedLine(i + 1, s) }
+                steps.forEachIndexed { i, s -> NumberedLine(i + 1, tr(s)) }
                 if (!custom) {
                     Spacer(Modifier.height(10.dp))
                     FilledTonalButton(onClick = { actions.openUrl(url) }, shapes = ButtonDefaults.shapes()) {
-                        Icon(Icons.Rounded.OpenInNew, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Open ${provider.label}")
+                        Icon(Icons.AutoMirrored.Rounded.OpenInNew, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(I18n.trArgs("Open %1\$s", LocalLanguage.current, provider.label))
                     }
                 }
             }
@@ -537,7 +543,7 @@ fun KeyStep(provider: Provider, onProvider: (Provider) -> Unit, actions: Onboard
 private fun NumberedLine(n: Int, text: String) {
     Row(Modifier.padding(vertical = 5.dp), verticalAlignment = Alignment.Top) {
         Box(Modifier.size(24.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
-            Text("$n", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Text(I18n.trArgs("%1\$d", LocalLanguage.current, n), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
         }
         Spacer(Modifier.width(12.dp))
         Text(text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 2.dp))
@@ -548,29 +554,31 @@ private fun NumberedLine(n: Int, text: String) {
 private fun SubStep(kind: SubKind, available: Boolean, onUseKey: () -> Unit, onSetup: () -> Unit, next: () -> Unit) {
     val (c, shape) = subMark(kind)
     val morph = remember(kind) { Morph(shape.unit(), shape.unit()) }
-    StepPage("${kind.label} subscription", "Use your ${kind.label} ${kind.plan}", "${kind.line} No API bill: it uses your plan's limits.", bottom = {
-        if (available) BigButton("Set it up") { onSetup(); next() }
+    val lang = LocalLanguage.current
+    StepPage(I18n.trArgs("%1\$s subscription", lang, kind.label), I18n.trArgs("Use your %1\$s %2\$s", lang, kind.label, kind.plan),
+        I18n.trArgs("%1\$s No API bill: it uses your plan's limits.", lang, trAny(kind.line, lang)), bottom = {
+        if (available) BigButton(tr("Set it up")) { onSetup(); next() }
         else {
-            BigButton("Use an API key instead", onClick = onUseKey)
-            TextButton(onClick = next, modifier = Modifier.fillMaxWidth().height(48.dp)) { Text("Continue anyway") }
+            BigButton(tr("Use an API key instead"), onClick = onUseKey)
+            TextButton(onClick = next, modifier = Modifier.fillMaxWidth().height(48.dp)) { Text(tr("Continue anyway")) }
         }
     }) {
         Box(Modifier.size(72.dp).clip(MorphShape(morph, 0f)).background(c))
         Spacer(Modifier.height(20.dp))
         Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(20.dp)) {
-                Text("WHAT HAPPENS", style = Eyebrow, color = MaterialTheme.colorScheme.primary)
+                Text(tr("WHAT HAPPENS"), style = Eyebrow, color = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.height(10.dp))
-                NumberedLine(1, "We unpack a small runtime into the app. Nothing else to download.")
-                NumberedLine(2, "${kind.label}'s agent installs inside it.")
-                NumberedLine(3, "You sign in with your ${kind.label} account.")
-                NumberedLine(4, "Switch to an API key later and we delete the runtime to free the space.")
+                NumberedLine(1, tr("We unpack a small runtime into the app. Nothing else to download."))
+                NumberedLine(2, I18n.trArgs("%1\$s's agent installs inside it.", lang, kind.label))
+                NumberedLine(3, I18n.trArgs("You sign in with your %1\$s account.", lang, kind.label))
+                NumberedLine(4, tr("Switch to an API key later and we delete the runtime to free the space."))
             }
         }
         if (!available) {
             Spacer(Modifier.height(12.dp))
             Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.tertiaryContainer, modifier = Modifier.fillMaxWidth()) {
-                Text("This build doesn't include the ${kind.label} runtime pack yet. Use an API key for now; your memory, tasks and routines carry over when you switch.",
+                Text(I18n.trArgs("This build doesn't include the %1\$s runtime pack yet. Use an API key for now; your memory, tasks and routines carry over when you switch.", lang, kind.label),
                     Modifier.padding(20.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onTertiaryContainer)
             }
         }
@@ -580,11 +588,11 @@ private fun SubStep(kind: SubKind, available: Boolean, onUseKey: () -> Unit, onS
 @Composable
 fun AppsStep(actions: OnboardingActions, next: () -> Unit) {
     val cs = MaterialTheme.colorScheme
-    StepPage("Your apps", "Connect Gmail, Calendar and 250+ apps", "Optional. Connections run through Composio with your own free key, so your accounts stay yours.", bottom = {
-        TextButton(onClick = next, modifier = Modifier.fillMaxWidth().height(48.dp)) { Text("Skip for now") }
+    StepPage(tr("Your apps"), tr("Connect Gmail, Calendar and 250+ apps"), tr("Optional. Connections run through Composio with your own free key, so your accounts stay yours."), bottom = {
+        TextButton(onClick = next, modifier = Modifier.fillMaxWidth().height(48.dp)) { Text(tr("Skip for now")) }
     }) {
         Row(horizontalArrangement = Arrangement.spacedBy((-10).dp)) {
-            listOf("Gmail" to Color(0xFFEA4335), "Calendar" to Color(0xFF4285F4), "Drive" to Color(0xFF0F9D58), "Slack" to Color(0xFF611F69), "Notion" to Color(0xFF2B2A33), "+250" to cs.primary).forEach { (n, c) ->
+            listOf("Gmail" to Color(0xFFEA4335), "Calendar" to Color(0xFF4285F4), "Drive" to Color(0xFF0F9D58), "Slack" to Color(0xFF611F69), "Notion" to Color(0xFF2B2A33), tr("+250") to cs.primary).forEach { (n, c) ->
                 Box(Modifier.size(48.dp).border(3.dp, cs.surface, CircleShape).clip(CircleShape).background(c), contentAlignment = Alignment.Center) {
                     Text(if (n.startsWith("+")) n else n.take(1), style = MaterialTheme.typography.labelLarge, color = Color.White)
                 }
@@ -605,23 +613,23 @@ fun ComposioKeyForm(save: suspend (String) -> String?, openUrl: (String) -> Unit
     Column {
         Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(20.dp)) {
-                Text("GET YOUR KEY IN A MINUTE", style = Eyebrow, color = MaterialTheme.colorScheme.primary)
+                Text(tr("GET YOUR KEY IN A MINUTE"), style = Eyebrow, color = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.height(10.dp))
-                NumberedLine(1, "Tap the button below. It opens Composio. Sign up, it's free.")
-                NumberedLine(2, "Open your project's Settings, then API Keys, and create a key. Your personal user key from your account settings works too.")
-                NumberedLine(3, "Copy the key, come back here and paste it below.")
-                NumberedLine(4, "Then pick the apps you want (Gmail, Calendar...) in Connections.")
+                NumberedLine(1, tr("Tap the button below. It opens Composio. Sign up, it's free."))
+                NumberedLine(2, tr("Open your project's Settings, then API Keys, and create a key. Your personal user key from your account settings works too."))
+                NumberedLine(3, tr("Copy the key, come back here and paste it below."))
+                NumberedLine(4, tr("Then pick the apps you want (Gmail, Calendar...) in Connections."))
                 Spacer(Modifier.height(10.dp))
                 FilledTonalButton(onClick = { openUrl("https://platform.composio.dev") }, shapes = ButtonDefaults.shapes()) {
-                    Icon(Icons.Rounded.OpenInNew, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Open Composio")
+                    Icon(Icons.AutoMirrored.Rounded.OpenInNew, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(tr("Open Composio"))
                 }
             }
         }
         Spacer(Modifier.height(16.dp))
-        OutlinedTextField(key, { key = it.trim(); error = null }, label = { Text("Composio API key") }, singleLine = true, visualTransformation = PasswordVisualTransformation(),
+        OutlinedTextField(key, { key = it.trim(); error = null }, label = { Text(tr("Composio API key")) }, singleLine = true, visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, isError = error != null, supportingText = error?.let { { Text(it) } })
         Spacer(Modifier.height(12.dp))
-        BigButton(if (busy) "Checking…" else "Connect", enabled = key.length > 8 && !busy, icon = null) {
+        BigButton(if (busy) tr("Checking…") else tr("Connect"), enabled = key.length > 8 && !busy, icon = null) {
             scope.launch { busy = true; error = save(key); busy = false; if (error == null) onSaved() }
         }
     }
@@ -646,12 +654,12 @@ private fun ReadyStep(user: String, actions: OnboardingActions) {
             AgentAvatar(working = false, size = 112.dp)
         }
         Spacer(Modifier.height(24.dp))
-        Text(if (user.isNotBlank()) "You're set, ${user.trim()}." else "You're set.", style = MaterialTheme.typography.displaySmall)
+        Text(if (user.isNotBlank()) I18n.trArgs("You're set, %1\$s.", LocalLanguage.current, user.trim()) else tr("You're set."), style = MaterialTheme.typography.displaySmall)
         Spacer(Modifier.height(12.dp))
-        Text("One last thing: let me send you notifications, so I can tell you when something's done or when I need a yes from you.", style = MaterialTheme.typography.bodyLarge, color = cs.onSurfaceVariant)
+        Text(tr("One last thing: let me send you notifications, so I can tell you when something's done or when I need a yes from you."), style = MaterialTheme.typography.bodyLarge, color = cs.onSurfaceVariant)
         Spacer(Modifier.weight(1f))
-        BigButton("Allow notifications", icon = Icons.Rounded.NotificationsActive) { actions.requestNotifications(); actions.finish() }
-        TextButton(onClick = actions.finish, modifier = Modifier.fillMaxWidth().height(48.dp)) { Text("Not now") }
+        BigButton(tr("Allow notifications"), icon = Icons.Rounded.NotificationsActive) { actions.requestNotifications(); actions.finish() }
+        TextButton(onClick = actions.finish, modifier = Modifier.fillMaxWidth().height(48.dp)) { Text(tr("Not now")) }
         Spacer(Modifier.height(12.dp))
     }
 }

@@ -12,6 +12,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.past9.phoneaos.ui.i18n.tr
+import com.past9.phoneaos.ui.i18n.trArgs
 import com.past9.phoneaos.ui.theme.Eyebrow
 import kotlinx.coroutines.launch
 
@@ -27,19 +29,19 @@ fun AppDrawer(agentName: String, counts: NavCounts, onGo: (String) -> Unit) {
                 Spacer(Modifier.width(14.dp))
                 Column {
                     Text(agentName, style = MaterialTheme.typography.titleLarge)
-                    Text("Everything it keeps for you", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(tr("Everything it keeps for you"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Spacer(Modifier.height(16.dp))
-            Text("YOUR AGENT", style = Eyebrow, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
-            Item(Icons.Rounded.ChatBubble, "Chat", null) { onGo("chat") }
-            Item(Icons.Rounded.TaskAlt, "Tasks", counts.tasks.takeIf { it > 0 }?.let { "$it open" }) { onGo("tasks") }
-            Item(Icons.Rounded.Psychology, "Memory", counts.memories.takeIf { it > 0 }?.toString()) { onGo("memory") }
-            Item(Icons.Rounded.Schedule, "Routines", counts.routines.takeIf { it > 0 }?.let { "$it on" }) { onGo("routines") }
-            Item(Icons.Rounded.Language, "Browser", null) { onGo("browser") }
+            Text(tr("YOUR AGENT"), style = Eyebrow, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            Item(Icons.Rounded.ChatBubble, tr("Chat"), null) { onGo("chat") }
+            Item(Icons.Rounded.TaskAlt, tr("Tasks"), if (counts.tasks > 0) trArgs("%1\$s open", counts.tasks) else null) { onGo("tasks") }
+            Item(Icons.Rounded.Psychology, tr("Memory"), counts.memories.takeIf { it > 0 }?.toString()) { onGo("memory") }
+            Item(Icons.Rounded.Schedule, tr("Routines"), if (counts.routines > 0) trArgs("%1\$s on", counts.routines) else null) { onGo("routines") }
+            Item(Icons.Rounded.Language, tr("Browser"), null) { onGo("browser") }
             HorizontalDivider(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), color = MaterialTheme.colorScheme.outlineVariant)
-            Item(Icons.Rounded.Apps, "Connections", counts.apps.takeIf { it > 0 }?.let { "$it apps" }) { onGo("connections") }
-            Item(Icons.Rounded.Settings, "Settings", null) { onGo("settings") }
+            Item(Icons.Rounded.Apps, tr("Connections"), if (counts.apps > 0) trArgs("%1\$s apps", counts.apps) else null) { onGo("connections") }
+            Item(Icons.Rounded.Settings, tr("Settings"), null) { onGo("settings") }
         }
     }
 }

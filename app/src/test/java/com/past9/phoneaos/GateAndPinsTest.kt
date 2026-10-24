@@ -101,7 +101,7 @@ class GateAndPinsTest {
         assertTrue(p.mainResults().any { it.startsWith("Not forwarded") && it.contains("pushed back 0 times") })
         val q = questions().single()
         assertEquals("It tried everything I suggested.", JSONObject(q.meta).getString("why"))
-        assertTrue(phone.notes.single().contains("needs you|It tried everything I suggested."))
+        assertTrue(phone.notes.single().contains("به شما نیاز دارد|It tried everything I suggested."))
         rt.answer(q.id, "OK"); waitIdle(rt)
         assertEquals(listOf("pushed_back", "pushed_back", "forwarded"), rt.escalationLog.recent().map { it.getString("decision") })
     }
@@ -131,7 +131,7 @@ class GateAndPinsTest {
         val q = questions().single()
         assertTrue(q.text.startsWith("APPROVAL|Send email to Lerato|"))
         assertEquals("It sends an email in your name.", JSONObject(q.meta).getString("why"))
-        assertTrue(phone.notes.single().startsWith("Approve?|Send email to Lerato"))
+        assertTrue(phone.notes.single().startsWith("تأیید می‌کنید؟|Send email to Lerato"))
         rt.answer(q.id, "Approve"); waitIdle(rt)
         assertTrue(p.helperResults().any { it.startsWith("APPROVED") })
     }

@@ -35,6 +35,10 @@ import com.past9.phoneaos.triggers.Routines
 import com.past9.phoneaos.ui.AgentAvatar
 import com.past9.phoneaos.ui.SectionHeader
 import com.past9.phoneaos.ui.StatusPill
+import com.past9.phoneaos.ui.i18n.I18n
+import com.past9.phoneaos.ui.i18n.LocalLanguage
+import com.past9.phoneaos.ui.i18n.tr
+import com.past9.phoneaos.ui.i18n.trArgs
 import com.past9.phoneaos.ui.theme.Eyebrow
 import com.past9.phoneaos.ui.theme.LocalExtra
 import org.json.JSONObject
@@ -76,13 +80,13 @@ data class HomeActions(
 )
 
 /** What the agent is doing right now, in one human line. */
-fun nowLine(s: HomeState): String {
+fun nowLine(s: HomeState, language: String = "en"): String {
     val pending = s.items.count { it.kind == "question" && !JSONObject(it.meta).has("answer") }
     return when {
-        pending > 0 -> "Waiting for you on ${if (pending == 1) "one thing" else "$pending things"}"
-        s.status.working -> s.status.label + (if (s.status.helpers > 0) " with ${s.status.helpers} helper${if (s.status.helpers > 1) "s" else ""}" else "") + "…"
-        s.status.helpers > 0 -> "${s.status.helpers} helper${if (s.status.helpers > 1) "s" else ""} working on it. Talk to me any time."
-        else -> "Free. Ask me anything."
+        pending > 0 -> if (pending == 1) I18n.tr("Waiting for you on one thing", language) else I18n.trArgs("Waiting for you on %1\$s things", language, pending)
+        s.status.working -> s.status.label + (if (s.status.helpers > 0) " " + I18n.trArgs(if (s.status.helpers > 1) "with %1\$s helpers" else "with %1\$s helper", language, s.status.helpers) else "") + "…"
+        s.status.helpers > 0 -> I18n.trArgs(if (s.status.helpers > 1) "%1\$s helpers working on it. Talk to me any time." else "%1\$s helper working on it. Talk to me any time.", language, s.status.helpers)
+        else -> I18n.tr("Free. Ask me anything.", language)
     }
 }
 
@@ -104,9 +108,9 @@ fun HomeScreen(s: HomeState, actions: HomeActions, bottomPadding: Dp = 120.dp) {
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(top = 8.dp, start = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(ZonedDateTime.now().format(DateTimeFormatter.ofPattern("EEEE d MMMM")).uppercase(), style = Eyebrow, color = cs.primary)
-                    Text(greeting(s.userName), style = MaterialTheme.typography.headlineMedium)
+                    Text(greeting(s.userName, LocalLanguage.current), style = MaterialTheme.typography.headlineMedium)
                 }
-                IconButton(onClick = actions.onSettings) { Icon(Icons.Rounded.Settings, "Settings", tint = cs.onSurfaceVariant) }
+                IconButton(onClick = actions.onSettings) { Icon(Icons.Rounded.Settings, tr("Settings"), tint = cs.onSurfaceVariant) }
             }
         }
         // The agent, right now. Tap for its profile.
@@ -117,19 +121,19 @@ fun HomeScreen(s: HomeState, actions: HomeActions, bottomPadding: Dp = 120.dp) {
                         AgentAvatar(working = s.status.working, needsYou = pending.isNotEmpty(), size = 76.dp)
                         Spacer(Modifier.width(18.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("RIGHT NOW", style = Eyebrow, color = cs.onPrimaryContainer.copy(alpha = 0.75f))
+                            Text(tr("RIGHT NOW"), style = Eyebrow, color = cs.onPrimaryContainer.copy(alpha = 0.75f))
                             Text(s.agentName, style = MaterialTheme.typography.titleLarge, color = cs.onPrimaryContainer)
-                            AnimatedContent(nowLine(s), transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(150)) }, label = "now") {
+                            AnimatedContent(nowLine(s, LocalLanguage.current), transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(150)) }, label = "now") {
                                 Text(it, style = MaterialTheme.typography.bodyMedium, color = cs.onPrimaryContainer)
                             }
                         }
-                        Icon(Icons.AutoMirrored.Rounded.ArrowForward, "Open profile", tint = cs.onPrimaryContainer)
+                        Icon(Icons.AutoMirrored.Rounded.ArrowForward, tr("Open profile"), tint = cs.onPrimaryContainer)
                     }
                     val focus = openGoals.firstOrNull { g -> s.tasks.any { it.goalId == g.id && it.status == "doing" } } ?: openGoals.firstOrNull()
                     if (focus != null) {
                         val gt = s.tasks.filter { it.goalId == focus.id }; val done = gt.count { it.status == "done" }
                         Spacer(Modifier.height(16.dp))
-                        Text("WORKING ON", style = Eyebrow, color = cs.onPrimaryContainer.copy(alpha = 0.75f))
+                        Text(tr("WORKING ON"), style = Eyebrow, color = cs.onPrimaryContainer.copy(alpha = 0.75f))
                         Spacer(Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(focus.title, style = MaterialTheme.typography.titleMedium, color = cs.onPrimaryContainer, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -141,49 +145,49 @@ fun HomeScreen(s: HomeState, actions: HomeActions, bottomPadding: Dp = 120.dp) {
                     if (actions.onCall != null) {
                         Spacer(Modifier.height(14.dp))
                         Button(onClick = actions.onCall, shapes = ButtonDefaults.shapes(), colors = ButtonDefaults.buttonColors(containerColor = cs.onPrimaryContainer, contentColor = cs.primaryContainer)) {
-                            Icon(Icons.Rounded.Call, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Call ${s.agentName.takeIf { it != "Your agent" } ?: "your agent"}")
+                            Icon(Icons.Rounded.Call, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(trArgs("Call %1\$s", s.agentName.takeIf { it != "Your agent" } ?: tr("your agent")))
                         }
                     }
                     if (s.browserLive) {
                         Spacer(Modifier.height(14.dp))
-                        FilledTonalButton(onClick = actions.onBrowser, shapes = ButtonDefaults.shapes()) { Icon(Icons.Rounded.Language, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Watch it browse") }
+                        FilledTonalButton(onClick = actions.onBrowser, shapes = ButtonDefaults.shapes()) { Icon(Icons.Rounded.Language, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(tr("Watch it browse")) }
                     }
                 }
             }
         }
         if (pending.isNotEmpty() || blockedMine.isNotEmpty()) {
-            item { SectionHeader("Needs you", "Your agent can't go on without these", Modifier.padding(start = 4.dp, top = 6.dp)) }
+            item { SectionHeader(tr("Needs you"), tr("Your agent can't go on without these"), Modifier.padding(start = 4.dp, top = 6.dp)) }
             items(pending, key = { "q${it.id}" }) { q -> NeedsYouCard(q, actions) }
             items(blockedMine, key = { "b${it.id}" }) { t ->
                 Surface(onClick = actions.onChat, shape = MaterialTheme.shapes.large, color = cs.tertiaryContainer, modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp)) {
-                        Text("BLOCKED", style = Eyebrow, color = cs.onTertiaryContainer)
+                        Text(tr("BLOCKED"), style = Eyebrow, color = cs.onTertiaryContainer)
                         Text(t.title, style = MaterialTheme.typography.titleSmall, color = cs.onTertiaryContainer)
-                        Text("Needs: ${t.blocker}", style = MaterialTheme.typography.bodyMedium, color = cs.onTertiaryContainer)
+                        Text(trArgs("Needs: %1\$s", t.blocker), style = MaterialTheme.typography.bodyMedium, color = cs.onTertiaryContainer)
                     }
                 }
             }
         }
         if (s.cards.isNotEmpty()) {
-            item { SectionHeader("Your cards", "Kept up to date for you. Tap one to open it", Modifier.padding(start = 4.dp, top = 6.dp)) }
+            item { SectionHeader(tr("Your cards"), tr("Kept up to date for you. Tap one to open it"), Modifier.padding(start = 4.dp, top = 6.dp)) }
             item { com.past9.phoneaos.ui.CardTiles(s.cards, actions.onCard, s.now) }
         }
     }
     val secondary: androidx.compose.foundation.lazy.LazyListScope.() -> Unit = {
-        item { SectionHeader("Your to-dos", if (myTodos.isEmpty()) "Nothing on your list" else "${myTodos.size} open, soonest first", Modifier.padding(start = 4.dp, top = 6.dp)) {
-            TextButton(onClick = actions.onTasks) { Text("All") }
+        item { SectionHeader(tr("Your to-dos"), if (myTodos.isEmpty()) tr("Nothing on your list") else "${myTodos.size} open, soonest first", Modifier.padding(start = 4.dp, top = 6.dp)) {
+            TextButton(onClick = actions.onTasks) { Text(tr("All")) }
         } }
         item {
             Surface(shape = MaterialTheme.shapes.extraLarge, color = cs.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(vertical = 6.dp)) {
-                    if (myTodos.isEmpty()) Text("Say \"remind me to…\" or \"add … to my list\" and it lands here.", Modifier.padding(18.dp), style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
+                    if (myTodos.isEmpty()) Text(tr("Say \"remind me to…\" or \"add … to my list\" and it lands here."), Modifier.padding(18.dp), style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
                     myTodos.take(5).forEach { t -> TodoLine(t, today, actions.onToggleTask) }
-                    if (myTodos.size > 5) TextButton(onClick = actions.onTasks, modifier = Modifier.padding(start = 8.dp)) { Text("${myTodos.size - 5} more") }
+                    if (myTodos.size > 5) TextButton(onClick = actions.onTasks, modifier = Modifier.padding(start = 8.dp)) { Text(trArgs("%1\$d more", myTodos.size - 5)) }
                 }
             }
         }
         if (openGoals.isNotEmpty()) {
-            item { SectionHeader("Goals", "What your agent is working through", Modifier.padding(start = 4.dp, top = 6.dp)) }
+            item { SectionHeader(tr("Goals"), tr("What your agent is working through"), Modifier.padding(start = 4.dp, top = 6.dp)) }
             item {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(end = 16.dp)) {
                     items(openGoals, key = { it.id }) { g -> GoalChipCard(g, s.tasks.filter { it.goalId == g.id }) { actions.onGoal(g) } }
@@ -192,7 +196,7 @@ fun HomeScreen(s: HomeState, actions: HomeActions, bottomPadding: Dp = 120.dp) {
         }
         val coming = comingUp(s)
         if (coming.isNotEmpty()) {
-            item { SectionHeader("Coming up", "Routines and deadlines in the next few days", Modifier.padding(start = 4.dp, top = 6.dp)) }
+            item { SectionHeader(tr("Coming up"), tr("Routines and deadlines in the next few days"), Modifier.padding(start = 4.dp, top = 6.dp)) }
             item {
                 Surface(shape = MaterialTheme.shapes.extraLarge, color = cs.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(vertical = 6.dp)) { coming.take(6).forEach { (icon, title, line, urgent) -> ComingLine(icon, title, line, urgent, actions.onRoutines) } }
@@ -205,22 +209,22 @@ fun HomeScreen(s: HomeState, actions: HomeActions, bottomPadding: Dp = 120.dp) {
                     Icon(Icons.Rounded.NotificationsActive, null, tint = cs.primary)
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("${s.notifications24h} notifications today", style = MaterialTheme.typography.titleSmall)
-                        Text("From ${s.notifApps} app${if (s.notifApps == 1) "" else "s"} you let your agent read", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+                        Text(trArgs("%1\$s notifications today", s.notifications24h.toString()), style = MaterialTheme.typography.titleSmall)
+                        Text(trArgs(if (s.notifApps == 1) "From %1\$s app you let your agent read" else "From %1\$s apps you let your agent read", s.notifApps.toString()), style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
                     }
                 }
             }
         }
         val latest = s.items.lastOrNull { it.kind == "agent" || it.kind == "voice" }
         if (latest != null) {
-            item { SectionHeader("Latest", "The last thing your agent told you", Modifier.padding(start = 4.dp, top = 6.dp)) }
+            item { SectionHeader(tr("Latest"), tr("The last thing your agent told you"), Modifier.padding(start = 4.dp, top = 6.dp)) }
             item {
                 Surface(onClick = actions.onChat, shape = MaterialTheme.shapes.extraLarge, color = cs.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(18.dp), verticalAlignment = Alignment.Top) {
                         AgentAvatar(working = false, size = 36.dp)
                         Spacer(Modifier.width(14.dp))
                         Column(Modifier.weight(1f)) {
-                            Text((if (latest.kind == "voice") "VOICE NOTE · " else "") + com.past9.phoneaos.ui.relativeTime(latest.createdAt).uppercase(), style = Eyebrow, color = cs.primary)
+                            Text((if (latest.kind == "voice") I18n.tr("VOICE NOTE · ", LocalLanguage.current) else "") + com.past9.phoneaos.ui.relativeTime(latest.createdAt, language = LocalLanguage.current).uppercase(), style = Eyebrow, color = cs.primary)
                             Spacer(Modifier.height(4.dp))
                             // The real message, rendered (bold, lists, links), cut to a few lines; no raw markdown.
                             Box(Modifier.heightIn(max = 112.dp)) {
@@ -228,7 +232,7 @@ fun HomeScreen(s: HomeState, actions: HomeActions, bottomPadding: Dp = 120.dp) {
                                     style = MaterialTheme.typography.bodyMedium)
                             }
                             Spacer(Modifier.height(8.dp))
-                            Text("Continue in chat", style = MaterialTheme.typography.labelLarge, color = cs.primary)
+                            Text(tr("Continue in chat"), style = MaterialTheme.typography.labelLarge, color = cs.primary)
                         }
                     }
                 }
@@ -244,10 +248,11 @@ fun HomeScreen(s: HomeState, actions: HomeActions, bottomPadding: Dp = 120.dp) {
     }
 }
 
-private fun greeting(name: String): String {
+private fun greeting(name: String, language: String = "en"): String {
     val h = ZonedDateTime.now().hour
     val part = when (h) { in 5..11 -> "Good morning"; in 12..16 -> "Good afternoon"; in 17..21 -> "Good evening"; else -> "Hey" }
-    return if (name.isBlank()) "$part." else "$part, $name."
+    val g = I18n.tr(part, language)
+    return if (name.isBlank()) "$g." else "$g, $name."
 }
 
 @Composable
@@ -263,14 +268,14 @@ private fun NeedsYouCard(q: ChatItem, actions: HomeActions) {
                     AppLogo(req.name, req.logo, 44.dp)
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("CONNECT AN APP", style = Eyebrow, color = cs.onTertiaryContainer)
+                        Text(tr("CONNECT AN APP"), style = Eyebrow, color = cs.onTertiaryContainer)
                         Text(req.summary, style = MaterialTheme.typography.titleMedium, color = cs.onTertiaryContainer, maxLines = 3, overflow = TextOverflow.Ellipsis)
                     }
                 }
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { actions.onAnswer(q.id, "Decline") }, shapes = ButtonDefaults.shapes(), modifier = Modifier.weight(1f).heightIn(min = 48.dp)) { Text("Decline", color = cs.onTertiaryContainer) }
-                    Button(onClick = { actions.onAnswer(q.id, "Connect") }, shapes = ButtonDefaults.shapes(), modifier = Modifier.weight(1.4f).heightIn(min = 48.dp)) { Text("Connect") }
+                    OutlinedButton(onClick = { actions.onAnswer(q.id, "Decline") }, shapes = ButtonDefaults.shapes(), modifier = Modifier.weight(1f).heightIn(min = 48.dp)) { Text(tr("Decline"), color = cs.onTertiaryContainer) }
+                    Button(onClick = { actions.onAnswer(q.id, "Connect") }, shapes = ButtonDefaults.shapes(), modifier = Modifier.weight(1.4f).heightIn(min = 48.dp)) { Text(tr("Connect")) }
                 }
             }
         }
@@ -278,17 +283,17 @@ private fun NeedsYouCard(q: ChatItem, actions: HomeActions) {
     }
     if (!approval) {
         val meta = JSONObject(q.meta)
-        val why = meta.optString("why").takeIf { it.isNotBlank() }?.let { "${meta.optString("whyBy").ifBlank { "Your agent" }}: $it" }
-        com.past9.phoneaos.ui.openui.AskCard("Needs you", why, q.text, opts, onPick = { o -> actions.onAnswer(q.id, o) })
+        val why = meta.optString("why").takeIf { it.isNotBlank() }?.let { "${meta.optString("whyBy").ifBlank { tr("Your agent") }}: $it" }
+        com.past9.phoneaos.ui.openui.AskCard(tr("Needs you"), why, q.text, opts, onPick = { o -> actions.onAnswer(q.id, o) })
         return
     }
     Surface(shape = MaterialTheme.shapes.extraLarge, color = cs.tertiaryContainer, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(18.dp)) {
-            Text("APPROVE?", style = Eyebrow, color = cs.onTertiaryContainer)
+            Text(tr("APPROVE?"), style = Eyebrow, color = cs.onTertiaryContainer)
             Spacer(Modifier.height(4.dp))
             Text(parts.getOrElse(1) { "" }, style = MaterialTheme.typography.titleMedium, color = cs.onTertiaryContainer, maxLines = 3, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(12.dp))
-            Button(onClick = actions.onChat, modifier = Modifier.fillMaxWidth().height(48.dp), shapes = ButtonDefaults.shapes()) { Text("Review and approve") }
+            Button(onClick = actions.onChat, modifier = Modifier.fillMaxWidth().height(48.dp), shapes = ButtonDefaults.shapes()) { Text(tr("Review and approve")) }
         }
     }
 }
@@ -301,7 +306,7 @@ fun TodoLine(t: TaskRow, today: LocalDate, onToggle: (TaskRow) -> Unit) {
         due == null -> null to cs.onSurfaceVariant
         due.isBefore(today) -> "Overdue · ${dueLabel(t.dueAt)}" to cs.error
         due == today -> "Today${dueLabel(t.dueAt).substringAfter(",", "").let { if (it.isBlank()) "" else ",$it" }}" to cs.tertiary
-        due == today.plusDays(1) -> "Tomorrow" to cs.onSurfaceVariant
+        due == today.plusDays(1) -> tr("Tomorrow") to cs.onSurfaceVariant
         else -> dueLabel(t.dueAt) to cs.onSurfaceVariant
     }
     Row(Modifier.fillMaxWidth().clickable { onToggle(t) }.heightIn(min = 56.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -310,7 +315,7 @@ fun TodoLine(t: TaskRow, today: LocalDate, onToggle: (TaskRow) -> Unit) {
             Text(t.title, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (label != null) Text(label, style = MaterialTheme.typography.labelMedium, color = color)
         }
-        if (t.status == "blocked") StatusPill("Blocked", cs.tertiaryContainer, cs.onTertiaryContainer, Modifier.padding(end = 8.dp))
+        if (t.status == "blocked") StatusPill(tr("Blocked"), cs.tertiaryContainer, cs.onTertiaryContainer, Modifier.padding(end = 8.dp))
     }
 }
 
@@ -328,7 +333,7 @@ fun GoalChipCard(g: GoalRow, tasks: List<TaskRow>, onClick: () -> Unit) {
                     Text("${(p * 100).toInt()}", style = MaterialTheme.typography.labelSmall)
                 }
                 Spacer(Modifier.weight(1f))
-                if (blocked) StatusPill("Blocked", cs.tertiary, cs.onTertiary) else Text("$done/${tasks.size}", style = MaterialTheme.typography.labelLarge, color = cs.onSurfaceVariant)
+                if (blocked) StatusPill(tr("Blocked"), cs.tertiary, cs.onTertiary) else Text("$done/${tasks.size}", style = MaterialTheme.typography.labelLarge, color = cs.onSurfaceVariant)
             }
             Spacer(Modifier.weight(1f))
             Text(g.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis, color = if (blocked) cs.onTertiaryContainer else cs.onSurface)
@@ -364,7 +369,7 @@ private fun ComingLine(icon: ImageVector, title: String, line: String, urgent: B
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(line, style = MaterialTheme.typography.bodySmall, color = if (urgent) cs.tertiary else cs.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(tr(line), style = MaterialTheme.typography.bodySmall, color = if (urgent) cs.tertiary else cs.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -372,11 +377,11 @@ private fun ComingLine(icon: ImageVector, title: String, line: String, urgent: B
 /** The floating bar: where you are, and one big button to talk to your agent. */
 @Composable
 fun HomeBar(current: String, onGo: (String) -> Unit, onTalk: () -> Unit, modifier: Modifier = Modifier) {
-    val tabs = listOf(Triple("home", Icons.Rounded.Home, "Home"), Triple("tasks", Icons.Rounded.TaskAlt, "Tasks"), Triple("memory", Icons.Rounded.Hub, "Memory"),
-        Triple("routines", Icons.Rounded.Schedule, "Routines"), Triple("connections", Icons.Rounded.Apps, "Apps"))
+    val tabs = listOf(Triple("home", Icons.Rounded.Home, tr("Home")), Triple("tasks", Icons.Rounded.TaskAlt, tr("Tasks")), Triple("memory", Icons.Rounded.Hub, tr("Memory")),
+        Triple("routines", Icons.Rounded.Schedule, tr("Routines")), Triple("connections", Icons.Rounded.Apps, tr("Apps")))
     HorizontalFloatingToolbar(
         expanded = true,
-        floatingActionButton = { FloatingToolbarDefaults.VibrantFloatingActionButton(onClick = onTalk, containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary) { Icon(Icons.AutoMirrored.Rounded.Chat, "Talk to your agent") } },
+        floatingActionButton = { FloatingToolbarDefaults.VibrantFloatingActionButton(onClick = onTalk, containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary) { Icon(Icons.AutoMirrored.Rounded.Chat, tr("Talk to your agent")) } },
         colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
         modifier = modifier.navigationBarsPadding().padding(bottom = 16.dp),
     ) {
