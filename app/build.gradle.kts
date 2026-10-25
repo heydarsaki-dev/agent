@@ -39,7 +39,12 @@ android {
   }
   buildTypes {
     release {
-      isMinifyEnabled = false
+      // Shrink the release APK: R8 drops the unused Code and BouncyCastle reflection
+      // escape hatches below keep working; the debug build stays unshrunk so
+      // stack traces and Roborazzi screenshots keep matching what developers read.
+      isMinifyEnabled = true
+      isShrinkResources = true
+      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfigs.findByName("release")?.let { signingConfig = it }
     }
   }
