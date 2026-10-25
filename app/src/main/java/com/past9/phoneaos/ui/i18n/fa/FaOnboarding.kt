@@ -6,12 +6,12 @@ internal val faOnboarding: Map<String, String> = mapOf(
     "Back" to "بازگشت",
     "Hi! I'm your agent." to "سلام! من دستیار شما هستم",
     "MEET YOUR AGENT" to "با دستیار خود ملاقات کنید",
-    "It does the busywork.\nYou get your day back." to "مکاره‌ها را انجام می‌دهد.\nروزتان را برمی‌گردانید.",
+    "It does the busywork.\nYou get your day back." to "کارهای خسته‌کننده را انجام می‌دهد.",
     "It browses, plans, remembers and follows up, right here on your phone. Even while you're in other apps." to
-        "همین‌جا روی گوشی شما وب را مرور می‌کند، برنامه می‌ریزد، به یاد می‌سپارد و پیگیری می‌کند؛ حتی وقتی مشغول برنامه‌های دیگر هستید.",
+        "همین‌جا روی گوشی شما وب را مرور می‌کند، برنامه‌ریزی می‌کند، به یاد می‌سپارد و پیگیری می‌کند؛ حتی وقتی مشغول برنامه‌های دیگر هستید.",
     "It uses its own built-in browser and can't control your Chrome tabs, so you sign in to your sites inside it." to
         "مرورگر داخلی خودش را دارد و به زبانه‌های Chrome شما دست نمی‌برد؛ پس برای ورود به سایت‌هایتان، داخل همان مرورگر وارد شوید.",
-    "Your keys. Your phone. No servers of ours." to "کلیدهای شما گوشی شما هیچ سروری از ما نیست",
+    "Your keys. Your phone. No servers of ours." to "کلیدهای شما. گوشی شما. هیچ سروری از ما نیست.",
     "Get started" to "شروع کنیم",
 
     // About you
@@ -28,9 +28,9 @@ internal val faOnboarding: Map<String, String> = mapOf(
     "Looks good" to "خوب است",
     "Browsing · 2 helpers" to "در حال مرور · ۲ کمک کننده",
     "Find me a quiet café near work" to "برای من یک کافه آرام در نزدیکی محل کار پیدا کنید",
-    "Hold to approve" to "برای تایید نگه دارید",
+    "Hold to approve" to "برای تأیید نگه دارید",
     "YOUR COLOUR" to "رنگ شما",
-    "YOUR SIDEKICK" to "طرف شما",
+    "YOUR SIDEKICK" to "یار شما",
 
     // Colours
     "Iris" to "بنفشه",
@@ -108,7 +108,7 @@ internal val faOnboarding: Map<String, String> = mapOf(
     "Key works." to "کلید کار می‌کند.",
     "Change" to "تغییر",
     "Pick your model" to "مدل خود را انتخاب کنید",
-    "WHERE TO GET ONE" to "از کجا می‌توان یکی را دریافت کرد",
+    "WHERE TO GET ONE" to "کلید را از کجا بگیرم",
     "Open %1\$s" to "باز کردن %1\$s",
 
     // Key step instructions
