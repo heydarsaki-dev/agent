@@ -62,16 +62,7 @@ object I18n {
 
 /** The per-screen Persian maps, in one registry so I18n can merge them. */
 internal val faParts: List<() -> Map<String, String>> = listOf(
-    { com.past9.phoneaos.ui.i18n.fa.faOnboarding },
-    { com.past9.phoneaos.ui.i18n.fa.faHome },
-    { com.past9.phoneaos.ui.i18n.fa.faChat },
-    { com.past9.phoneaos.ui.i18n.fa.faSettings },
-    { com.past9.phoneaos.ui.i18n.fa.faConnections },
-    { com.past9.phoneaos.ui.i18n.fa.faMemory },
-    { com.past9.phoneaos.ui.i18n.fa.faMachines },
-    { com.past9.phoneaos.ui.i18n.fa.faComponents },
-    { com.past9.phoneaos.ui.i18n.fa.faMisc },
-    { com.past9.phoneaos.ui.i18n.fa.faRuntime },
+    { com.past9.phoneaos.ui.i18n.fa.faUi },
 )
 
 /** The current language, provided once around the app's root. Defaults to English so previews and tests stay stable. */
