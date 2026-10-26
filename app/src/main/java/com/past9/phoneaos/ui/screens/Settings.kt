@@ -71,8 +71,8 @@ fun SettingsScreen(s: AgentSettings, runtime: RuntimeInfo, version: String, acti
                     Column(Modifier.weight(1f)) {
                         Text(tr("Language"), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilterChip(s.language != "en", { com.past9.phoneaos.App.graph(langCtx).settings.setLanguage("fa") }, label = { Text("فارسی") })
-                            FilterChip(s.language == "en", { com.past9.phoneaos.App.graph(langCtx).settings.setLanguage("en") }, label = { Text("English") })
+                            FilterChip(s.language != "en", { com.past9.phoneaos.App.graph(langCtx).settings.setLanguage("fa") }, label = { Text(tr("فارسی")) })
+                            FilterChip(s.language == "en", { com.past9.phoneaos.App.graph(langCtx).settings.setLanguage("en") }, label = { Text(tr("English")) })
                         }
                     }
                 }

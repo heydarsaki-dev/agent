@@ -58,7 +58,7 @@ fun TasksScreen(goals: List<GoalRow>, tasks: List<TaskRow>, actions: TaskActions
                 }
             }
             if (tab == 0) {
-                if (mine.isEmpty()) { EmptyState(tr("Your list is clear"), tr("Add a to-do, or tell your agent \"remind me to…\". Everything you need to do lives here.")); return@Column }
+                if (mine.isEmpty()) { EmptyState(tr("Your list is clear"), tr("Type a to-do, or just say \"remind me to…\". Everything you need to do lives here.")); return@Column }
                 val today = java.time.LocalDate.now()
                 LazyColumn(contentPadding = PaddingValues(start = com.past9.phoneaos.ui.sidePad(16.dp), end = com.past9.phoneaos.ui.sidePad(16.dp), top = 8.dp, bottom = bottomPadding), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     val todo = mine.filter { it.status != "done" }.sortedWith(compareBy({ it.dueAt ?: Long.MAX_VALUE }, { it.createdAt }))
@@ -71,7 +71,7 @@ fun TasksScreen(goals: List<GoalRow>, tasks: List<TaskRow>, actions: TaskActions
                 }
             } else {
                 val openGoals = goals.filter { it.status == "open" }
-                if (openGoals.isEmpty() && agents.isEmpty()) { EmptyState(tr("Nothing in progress"), tr("Give your agent something bigger, like \"plan my trip to Durban\". It breaks it into steps and works through them here.")); return@Column }
+                if (openGoals.isEmpty() && agents.isEmpty()) { EmptyState(tr("Nothing in progress"), tr("Hand your agent something bigger, like \"plan my weekend getaway\". It breaks it into steps and works through them here.")); return@Column }
                 LazyColumn(contentPadding = PaddingValues(start = com.past9.phoneaos.ui.sidePad(16.dp), end = com.past9.phoneaos.ui.sidePad(16.dp), top = 8.dp, bottom = bottomPadding), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(openGoals.sortedByDescending { g -> tasks.any { it.goalId == g.id && it.status == "blocked" } }, key = { "g${it.id}" }) { g -> GoalCard(g, tasks.filter { it.goalId == g.id }, actions) }
                     val loose = agents.filter { t -> t.goalId == null || openGoals.none { it.id == t.goalId } }.filter { it.status != "done" }

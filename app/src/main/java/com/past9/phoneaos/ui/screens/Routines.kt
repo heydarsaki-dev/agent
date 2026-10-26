@@ -70,7 +70,7 @@ fun RoutinesScreen(routines: List<TriggerRow>, actions: RoutineActions, now: Lon
     val next = running.filter { it.kind in clock }.mapNotNull { r -> Routines.nextRunIn(r, zNow)?.let { r to it } }.minByOrNull { it.second }
     SubScreen(tr("Routines"), if (running.isEmpty()) tr("Things your agent does on its own") else "${running.size} running on their own", actions.onBack,
         fab = { ExtendedFloatingActionButton(onClick = { editing = TriggerRow(name = "", kind = "daily", spec = "07:00", prompt = "") }, icon = { Icon(Icons.Rounded.Add, null) }, text = { Text(tr("New routine")) }, modifier = Modifier.padding(bottom = (bottomPadding - 40.dp).coerceAtLeast(0.dp))) }) { pad ->
-        if (routines.isEmpty()) { Box(Modifier.padding(pad)) { EmptyState(tr("No routines yet"), tr("Say \"every morning at 7, brief me on my day\" or \"when my bank emails, tell me what changed\". Or add one here."), shape = MaterialShapes.Sunny) }; return@SubScreen }
+        if (routines.isEmpty()) { Box(Modifier.padding(pad)) { EmptyState(tr("No routines yet"), tr("Say \"every morning at 8, brief me on my day\" or \"when a package ships, tell me\". Or add one here."), shape = MaterialShapes.Sunny) }; return@SubScreen }
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(start = com.past9.phoneaos.ui.sidePad(16.dp), end = com.past9.phoneaos.ui.sidePad(16.dp), top = 4.dp, bottom = bottomPadding + 72.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             next?.let { (r, ms) -> item(key = "next") { NextUp(r, ms, zNow, { actions.onRunNow(r) }) { editing = r } } }
             val groups = listOf(

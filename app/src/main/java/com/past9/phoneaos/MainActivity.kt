@@ -44,9 +44,11 @@ import com.past9.phoneaos.data.TaskRow
 import com.past9.phoneaos.system.Speaker
 import com.past9.phoneaos.triggers.Routines
 import com.past9.phoneaos.ui.screens.*
+import com.past9.phoneaos.ui.screens.WhisperSetupScreen
 import com.past9.phoneaos.ui.CardSheet
 import com.past9.phoneaos.ui.CardSheetActions
 import com.past9.phoneaos.ui.theme.AppTheme
+import com.past9.phoneaos.voice.WhisperStt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
@@ -274,8 +276,12 @@ class MainActivity : ComponentActivity() {
         }
         // Dictation: Google's newest live transcription model when a Gemini key is set, the device recogniser otherwise.
         var dictation by remember { mutableStateOf<com.past9.phoneaos.voice.Dictation?>(null) }
+        var whisperStt by remember { mutableStateOf<WhisperStt?>(null) }
         var dictating by remember { mutableStateOf(false) }
-        DisposableEffect(Unit) { onDispose { dictation?.cancel() } }
+        // Whisper setup screen state
+        var showWhisperSetup by remember { mutableStateOf(false) }
+        var whisperModelSize by remember { mutableStateOf("base") }
+        DisposableEffect(Unit) { onDispose { dictation?.cancel(); whisperStt?.cancel() } }
         fun legacyMic() { runCatching { voice.launch(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)) } }
         fun online(): Boolean = runCatching {
             val cm = getSystemService(android.net.ConnectivityManager::class.java)
@@ -283,21 +289,43 @@ class MainActivity : ComponentActivity() {
         }.getOrDefault(false)
         fun startDictation() {
             val key = g.settings.voiceKey("gemini")
-            if (key == null || !online()) { legacyMic(); return }
-            val base = draft
-            fun join(t: String) = if (t.isBlank()) base else if (base.isBlank()) t else base.trimEnd() + " " + t
-            var heard = false
-            val vocab = listOf(settings.agentName, settings.userName).filter { it.isNotBlank() && it != "Your agent" }
-            val d = com.past9.phoneaos.voice.Dictation(key, vocab, languageCodes = if (com.past9.phoneaos.ui.i18n.I18n.isPersian(g.settings.state.value.language)) listOf("fa-IR") else listOf("en-ZA", "zu-ZA"),
-                onText = { t -> runOnUiThread { heard = heard || t.isNotBlank(); draft = join(t) } }, onEnd = { err ->
+            if (key != null && online()) {
+                // Online: use Google Gemini live transcription
+                val base = draft
+                fun join(t: String) = if (t.isBlank()) base else if (base.isBlank()) t else base.trimEnd() + " " + t
+                var heard = false
+                val vocab = listOf(settings.agentName, settings.userName).filter { it.isNotBlank() && it != "Your agent" }
+                val d = com.past9.phoneaos.voice.Dictation(key, vocab, languageCodes = if (com.past9.phoneaos.ui.i18n.I18n.isPersian(g.settings.state.value.language)) listOf("fa-IR") else listOf("en-ZA", "zu-ZA"),
+                    onText = { t -> runOnUiThread { heard = heard || t.isNotBlank(); draft = join(t) } }, onEnd = { err ->
                 runOnUiThread { dictating = false; dictation = null; if (err != null && !heard) legacyMic() }
             })
-            dictation = d; dictating = true; d.start()
+                dictation = d; dictating = true; d.start()
+            } else {
+                // Offline: use whisper.cpp for Farsi
+                val isPersian = com.past9.phoneaos.ui.i18n.I18n.isPersian(g.settings.state.value.language)
+                if (!isPersian) { legacyMic(); return }
+                val base = draft
+                fun join(t: String) = if (t.isBlank()) base else if (base.isBlank()) t else base.trimEnd() + " " + t
+                val w = WhisperStt(this@MainActivity, modelSize = whisperModelSize,
+                    onText = { t -> runOnUiThread { draft = join(t) } },
+                    onEnd = { err -> runOnUiThread { dictating = false; whisperStt = null; if (err != null) legacyMic() } }
+                )
+                scope.launch {
+                    val ok = w.prepare()
+                    if (!ok) {
+                        runOnUiThread { showWhisperSetup = true }
+                        return@launch
+                    }
+                    whisperStt = w; dictating = true; w.start()
+                }
+            }
         }
         val dictPerm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (ok) startDictation() }
         fun toggleMic() {
             val d = dictation
+            val w = whisperStt
             if (d != null) { d.finish(); return }
+            if (w != null) { w.finish(); return }
             if (androidx.core.content.ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) startDictation()
             else if (g.settings.voiceKey("gemini") == null) legacyMic() else dictPerm.launch(Manifest.permission.RECORD_AUDIO)
         }
@@ -606,6 +634,23 @@ class MainActivity : ComponentActivity() {
                         onAddProfile = { n -> g.settings.addBrowserProfile(n); scope.launch { runCatching { BrowserService.await(this@MainActivity, "main", n).goto("https://www.google.com") } } },
                     ))
                 }
+                composable("whisper-setup") {
+                    var showLog by remember { mutableStateOf(false) }
+                    val w = remember { WhisperStt(this@MainActivity, modelSize = whisperModelSize, onText = {}, onEnd = {}) }
+                    val modelPath = w.modelPath()
+                    WhisperSetupScreen(
+                        modelSize = whisperModelSize,
+                        modelPath = modelPath,
+                        isDownloading = w.isDownloading(),
+                        downloadProgress = w.downloadProgress(),
+                        downloadError = w.downloadError(),
+                        onBack = { showWhisperSetup = false; whisperStt = null; dictating = false },
+                        onStartDownload = { scope.launch { w.downloadModel() } },
+                        onCancelDownload = { w.cancelDownload() },
+                        onRetry = { scope.launch { w.downloadModel() } },
+                        onDone = { showWhisperSetup = false }
+                    )
+                }
             }
             justConnected?.let { a ->
                 com.past9.phoneaos.ui.screens.AddToProfileSheet(a, conn.toolkits.firstOrNull { it.slug == a.slug }?.logo ?: com.past9.phoneaos.tools.AppCatalog.logo(a.slug),
@@ -637,7 +682,12 @@ class MainActivity : ComponentActivity() {
                     when { pickingHelper && onSub -> g.settings.setSubHelperModel(m.id); pickingHelper -> g.settings.setHelperModel(m.id); onSub -> g.settings.setSubModel(m.id); else -> g.settings.setModel(m.id) }
                     modelSheet = false
                 }, onDismiss = { modelSheet = false },
-                subtitle = if (pickingHelper) "Your agent plans and hands the work to helpers. Pick what they run on." else null)
+                subtitle = if (pickingHelper) "Your agent plans and hands the work to helpers. Pick what they run on." else null,
+                allowManualEntry = !onSub && !pickingHelper && settings.provider == Provider.CUSTOM,
+                onManualEntry = { manualId ->
+                    when { onSub -> g.settings.setSubModel(manualId); else -> g.settings.setModel(manualId) }
+                    modelSheet = false
+                })
             LaunchedEffect(route) { if (route != "chat") cameraOrigin = null }
             cameraOrigin?.let { o ->
                 com.past9.phoneaos.camera.CameraCard(o, onClosed = { cameraOrigin = null },
@@ -704,7 +754,7 @@ class MainActivity : ComponentActivity() {
         saveKey = { p, k -> if (g.settings.state.value.provider != p) g.settings.setProvider(p); g.settings.setApiKey(p, k) },
         testKey = { p, k -> testKey(p, k) },
         saveComposio = { k -> saveComposio(g, k) },
-        listModels = { p, k -> com.past9.phoneaos.agent.ModelCatalog.forKey(this, p, k, if (p == Provider.CUSTOM) g.settings.state.value.baseUrl else p.baseUrl, p == Provider.CUSTOM && g.settings.state.value.allowHttp) },
+        listModels = { p, k, baseUrl, allowHttp -> com.past9.phoneaos.agent.ModelCatalog.forKey(this, p, k, if (p == Provider.CUSTOM) baseUrl.orEmpty() else p.baseUrl, p == Provider.CUSTOM && allowHttp) },
         saveModel = { m -> g.settings.setModel(m) },
         openUrl = ::open,
     )
@@ -739,6 +789,8 @@ class MainActivity : ComponentActivity() {
         val provider = com.past9.phoneaos.agent.AgentRuntime.providerFor(p, key, if (p == Provider.CUSTOM) st.baseUrl else p.baseUrl, p == Provider.CUSTOM && st.allowHttp)
         suspend fun ping(m: String) = provider.complete("Reply with OK.", listOf(Msg.user("ping")), emptyList(), m, 16)
         return try { ping(model); null } catch (e: com.past9.phoneaos.agent.ProviderException) {
+            // For custom providers, don't fail on 404 (model not found) or "no choices" — key works, model can be changed later.
+            if (p == Provider.CUSTOM && (e.status == 404 || e.message?.contains("No choices in response") == true)) return null
             // A retired model (Google refuses Gemini 2.5 to new keys) shouldn't block setup: switch to the provider's default.
             if (e.status == 404 && model != p.defaultModel) {
                 try { ping(p.defaultModel); g.settings.setModel(p.defaultModel); return null } catch (_: Exception) {}

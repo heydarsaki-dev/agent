@@ -104,7 +104,7 @@ fun MemoryScreen(memories: List<MemoryRow>, actions: MemoryActions, bottomPaddin
                     items(kinds) { k -> FilterChip(kind == k, { kind = if (kind == k) null else k }, label = { Text(tr(k.replaceFirstChar { it.uppercase() })) }, leadingIcon = { Icon(pageIcon(k), null, Modifier.size(16.dp)) }, shape = RoundedCornerShape(50)) }
                 }
             }
-            if (memories.isEmpty()) item { EmptyState(tr("Nothing remembered yet"), tr("As you talk, your agent writes a page for each person, place and thing that matters, linked together like a wiki.")) }
+            if (memories.isEmpty()) item { EmptyState(tr("Nothing remembered yet"), tr("As you talk, your agent writes a page for each person, place and plan that matters, all linked together.")) }
             else if (shown.isEmpty()) item { EmptyState(tr("No match"), "Nothing in memory matches \"$query\".") }
             val pinned = shown.filter { it.pinned }; val rest = shown.filter { !it.pinned }
             if (pinned.isNotEmpty() && query.isBlank()) {
@@ -258,7 +258,7 @@ internal fun PageEditor(m: MemoryRow, onDismiss: () -> Unit, onSave: (MemoryRow)
         com.past9.phoneaos.ui.ChoiceChips(listOf("person" to tr("Person"), "place" to tr("Place"), "company" to tr("Company"), "project" to tr("Project"), "preference" to tr("Preference"), "event" to tr("Event"), "how-to" to tr("How-to"), "fact" to tr("Fact"))
             .map { (id, l) -> Triple(id, l, pageIcon(id)) }, kind, { kind = it }, label = tr("What is it"))
         Spacer(Modifier.height(20.dp))
-        com.past9.phoneaos.ui.SheetField(title, { title = it }, tr("Title"), tr("Lerato, Durban trip, Gym..."), big = true, singleLine = true)
+        com.past9.phoneaos.ui.SheetField(title, { title = it }, tr("Title"), tr("Sara, weekend trip, Gym..."), big = true, singleLine = true)
         Spacer(Modifier.height(16.dp))
         com.past9.phoneaos.ui.SheetField(body, { body = it }, tr("The page"), tr("What your agent should know. Link other pages with [[Name]]."), minLines = 6)
         Spacer(Modifier.height(16.dp))
@@ -284,7 +284,7 @@ fun MemoryTwoPane(memories: List<MemoryRow>, openId: Long?, onPick: (Long?) -> U
         val rest = com.past9.phoneaos.ui.windowWidthDp() - listWidth
         androidx.compose.runtime.CompositionLocalProvider(com.past9.phoneaos.ui.LocalPaneWidth provides rest) {
             Box(Modifier.weight(1f).fillMaxHeight()) {
-                if (shown == null) EmptyState(tr("No pages yet"), tr("Tell your agent about people, places and plans, and their pages show up here."), Modifier.align(Alignment.Center))
+                if (shown == null) EmptyState(tr("No pages yet"), tr("Tell your agent about your people, places and plans, and their pages show up here."), Modifier.align(Alignment.Center))
                 else WikiPageScreen(shown, memories, onBack = actions.onBack, onOpenTitle = onOpenTitle, onSave = actions.onSave,
                     onDelete = { m -> actions.onDelete(m); onPick(null) }, onAsk = onAsk)
             }

@@ -108,7 +108,7 @@ fun ProfileScreen(home: HomeState, memories: List<MemoryRow>, actions: ProfileAc
         }
         item { SectionHeader(tr("Goals I'm working on"), if (goals.isEmpty()) "None right now${if (achieved > 0) " · $achieved achieved" else ""}" else "${goals.size} open${if (achieved > 0) " · $achieved achieved" else ""}, blocked first", Modifier.padding(horizontal = 20.dp, vertical = 2.dp)) }
         if (goals.isEmpty()) item {
-            Text(tr("Give me something bigger, like \"plan my trip to Durban\", and I'll break it into steps and tick them off here."), Modifier.padding(horizontal = 20.dp), style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
+            Text(tr("Give me something bigger, like \"plan my weekend getaway\", and I'll break it into steps and tick them off here."), Modifier.padding(horizontal = 20.dp), style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
         }
         items(goals, key = { it.id }) { g -> GoalDetail(g, home.tasks.filter { it.goalId == g.id }) }
     }

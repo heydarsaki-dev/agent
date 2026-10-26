@@ -398,14 +398,14 @@ private fun ideaIcon(kind: String) = when (kind) {
 
 @Composable
 private fun Welcome(userName: String, modifier: Modifier, onSend: (String) -> Unit, morning: MorningUi?, hasChat: Boolean) {
-    val greeting = morning?.greeting?.ifBlank { null } ?: if (userName.isNotBlank()) "Hi $userName." else tr("Hi there.")
-    val line = morning?.line?.ifBlank { null } ?: tr("What should I take off your plate?")
-    val body = morning?.body?.ifBlank { null } ?: tr("I can browse for you in the background, keep your tasks, remember what matters, and run things on a schedule.")
+    val greeting = morning?.greeting?.ifBlank { null } ?: if (userName.isNotBlank()) "Hi $userName." else tr("Hi! I'm your agent.")
+    val line = morning?.line?.ifBlank { null } ?: tr("What are we getting done today?")
+    val body = morning?.body?.ifBlank { null } ?: tr("I browse in the background, keep your tasks moving, remember what matters to you, and run things on a schedule.")
     val ideas = morning?.ideas?.takeIf { it.isNotEmpty() }?.map { ideaIcon(it.first) to it.second } ?: listOf(
-        Icons.Rounded.TravelExplore to tr("Compare three phone contracts under R500 a month"),
-        Icons.AutoMirrored.Rounded.EventNote to tr("Plan my week: what's open and what's due"),
-        Icons.Rounded.Alarm to tr("Every morning at 7, give me the news that matters to me"),
-        Icons.Rounded.Psychology to tr("Remember that I prefer window seats and no red-eye flights"),
+        Icons.Rounded.TravelExplore to tr("Compare this month's internet packages and pick the best one for me"),
+        Icons.AutoMirrored.Rounded.EventNote to tr("Plan my week: what's open, what's due, what can wait"),
+        Icons.Rounded.Alarm to tr("Every morning at 8, brief me on what matters to me today"),
+        Icons.Rounded.Psychology to tr("Remember that I prefer quiet mornings and no meetings before 10"),
     )
     // Centred like the first-day screen, but it scrolls when the agent writes longer lines.
     BoxWithConstraints(modifier.fillMaxSize()) {
@@ -612,7 +612,7 @@ private fun StepsRow(items: List<ChatItem>) {
                 maxLines = if (open) 3 else 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
             if (items.size > 1) {
                 val routine = items.all { JSONObject(it.meta).optString("by") == "routine" }
-                Text(if (routine) "Routine · ${items.size} steps" else "${items.size} steps", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 8.dp))
+                Text(if (routine) trArgs("Routine · %1\$s steps", items.size) else trArgs("%1\$s steps", items.size), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 8.dp))
             }
             if (items.size > 1) Icon(if (open) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore, if (open) tr("Hide steps") else tr("Show steps"), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -783,7 +783,7 @@ fun ConnectCard(item: ChatItem, onAnswer: (Long, String) -> Unit) {
             Spacer(Modifier.height(14.dp))
             WhyLine(JSONObject(item.meta), cs.onSurfaceVariant)
             val why = req.reason.removePrefix("so I can ").removePrefix("So I can ").trim().trimEnd('.', '?')
-            Text(if (why.isNotBlank()) "So I can $why." else "This task needs ${req.name}.", style = MaterialTheme.typography.bodyLarge, color = cs.onSurface)
+            Text(if (why.isNotBlank()) trArgs("So I can %1\$s.", why) else trArgs("This task needs %1\$s.", req.name), style = MaterialTheme.typography.bodyLarge, color = cs.onSurface)
             Spacer(Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.Top) {
                 Icon(Icons.Rounded.Lock, null, Modifier.size(16.dp).padding(top = 2.dp), tint = cs.onSurfaceVariant)
@@ -925,17 +925,20 @@ private fun FileCard(item: ChatItem) {
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
                     Text(file.name, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(listOfNotNull(humanSize(file.length()), meta.optString("from").takeIf { it.isNotBlank() }?.let { "from $it" }).joinToString(" · "),
+                    Text(listOfNotNull(humanSize(file.length()), meta.optString("from").takeIf { it.isNotBlank() }?.let { trArgs("from %1\$s", it) }).joinToString(" · "),
                         style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
                 }
             }
             if (!file.exists()) { Text(tr("This file is no longer on the phone."), style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, modifier = Modifier.padding(top = 10.dp)); return@Column }
             Spacer(Modifier.height(14.dp))
+            val savedToDownloadsStr = tr("Saved to Downloads")
+            val savedStr = tr("Saved")
+            val saveStr = tr("Save")
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedButton(onClick = {
-                    saved = runCatching { saveToDownloads(ctx, file, mime) }.fold({ "Saved to Downloads" }, { "Couldn't save: ${it.message}" })
+                    saved = runCatching { saveToDownloads(ctx, file, mime) }.fold({ savedToDownloadsStr }, { "Couldn't save: ${it.message}" })
                 }, modifier = Modifier.weight(1f).heightIn(min = 48.dp), shapes = ButtonDefaults.shapes()) {
-                    Icon(if (saved == "Saved to Downloads") Icons.Rounded.Check else Icons.Rounded.Download, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(if (saved == "Saved to Downloads") tr("Saved") else tr("Save"))
+                    Icon(if (saved == savedToDownloadsStr) Icons.Rounded.Check else Icons.Rounded.Download, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(if (saved == savedToDownloadsStr) savedStr else saveStr)
                 }
                 Button(onClick = {
                     runCatching {
@@ -947,7 +950,7 @@ private fun FileCard(item: ChatItem) {
                     Icon(Icons.AutoMirrored.Rounded.OpenInNew, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(tr("Open"))
                 }
             }
-            saved?.takeIf { it != "Saved to Downloads" }?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = cs.error, modifier = Modifier.padding(top = 8.dp)) }
+            saved?.takeIf { it != savedToDownloadsStr }?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = cs.error, modifier = Modifier.padding(top = 8.dp)) }
         }
     }
 }

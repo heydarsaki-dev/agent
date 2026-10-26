@@ -15,6 +15,9 @@
 -keep class net.schmizz.sshj.** { *; }
 -keep class com.hierynomus.sshj.** { *; }
 
+# Keep agent provider classes and JSON model classes used for API communication
+-keep class com.past9.phoneaos.agent.** { *; }
+
 # OkHttp/MockWebServer reference okhttp3 internal platforms reflectively.
 -dontwarn okhttp3.internal.platform.**
 -dontwarn org.bouncycastle.**

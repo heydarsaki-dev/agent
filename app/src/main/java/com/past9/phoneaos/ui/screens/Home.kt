@@ -180,7 +180,7 @@ fun HomeScreen(s: HomeState, actions: HomeActions, bottomPadding: Dp = 120.dp) {
         item {
             Surface(shape = MaterialTheme.shapes.extraLarge, color = cs.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(vertical = 6.dp)) {
-                    if (myTodos.isEmpty()) Text(tr("Say \"remind me to…\" or \"add … to my list\" and it lands here."), Modifier.padding(18.dp), style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
+                    if (myTodos.isEmpty()) Text(tr("Tell me \"remind me to…\" or \"add this to my list\" and it lands right here."), Modifier.padding(18.dp), style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
                     myTodos.take(5).forEach { t -> TodoLine(t, today, actions.onToggleTask) }
                     if (myTodos.size > 5) TextButton(onClick = actions.onTasks, modifier = Modifier.padding(start = 8.dp)) { Text(trArgs("%1\$d more", myTodos.size - 5)) }
                 }

@@ -57,6 +57,13 @@ android {
     compose = true
     buildConfig = true
   }
+  // NDK: whisper.cpp for on-device Farsi STT
+  externalNativeBuild {
+    cmake {
+      path = file("src/main/cpp/CMakeLists.txt")
+      version = "3.22.1"
+    }
+  }
   testOptions {
     unitTests {
       isIncludeAndroidResources = true

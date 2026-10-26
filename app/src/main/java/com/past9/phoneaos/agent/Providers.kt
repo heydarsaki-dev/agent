@@ -105,7 +105,15 @@ class OpenAiCompatProvider(override val name: String, private val apiKey: String
         if (name == "openrouter") headers["X-Title"] = "Phone agent"
         HttpPolicy.check(baseUrl, allowHttp)
         val res = postJson(http, "${baseUrl.trimEnd('/')}/chat/completions", headers, body)
-        val choice = res.optJSONArray("choices")?.optJSONObject(0) ?: throw ProviderException("No choices in response")
+        // Handle different response formats from various OpenAI-compatible providers
+        val choice = res.optJSONArray("choices")?.optJSONObject(0)
+            ?: res.optJSONObject("choices")?.optJSONArray("data")?.optJSONObject(0)
+            ?: res.optJSONObject("data")?.optJSONArray("choices")?.optJSONObject(0)
+            ?: res.optJSONArray("data")?.optJSONObject(0)
+            ?: run {
+                android.util.Log.w("OpenAiCompat", "Unexpected response from $name ($baseUrl): $res")
+                throw ProviderException("No choices in response from $name. Full response: ${res.toString().take(500)}")
+            }
         val msg = choice.getJSONObject("message")
         val blocks = mutableListOf<Block>()
         msg.optString("reasoning_content").takeIf { it.isNotBlank() && it != "null" }?.let { blocks += Block.Reasoning(it) }

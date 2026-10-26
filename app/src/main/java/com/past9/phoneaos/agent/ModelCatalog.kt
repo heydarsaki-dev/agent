@@ -53,7 +53,9 @@ object ModelCatalog {
         }.build()
         val ids = runCatching {
             sharedHttp.newCall(req).execute().use { r ->
-                val arr = JSONObject(r.body!!.string()).optJSONArray("data") ?: org.json.JSONArray()
+                val bodyStr = r.body!!.string()
+                android.util.Log.d("ModelCatalog", "Models response from $p ($base): $bodyStr")
+                val arr = JSONObject(bodyStr).optJSONArray("data") ?: org.json.JSONArray()
                 (0 until arr.length()).map { arr.getJSONObject(it).optString("id").removePrefix("models/") }
             }
         }.getOrDefault(emptyList()).ifEmpty { dev?.keys()?.asSequence()?.toList().orEmpty() }

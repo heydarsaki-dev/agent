@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
@@ -73,7 +74,7 @@ data class OnboardingActions(
     val testKey: suspend (Provider, String) -> String? = { _, _ -> null },
     val saveComposio: suspend (String) -> String? = { null },
     /** Models this key can use, newest first (live from the provider). */
-    val listModels: suspend (Provider, String) -> List<com.past9.phoneaos.agent.ModelInfo> = { _, _ -> emptyList() },
+    val listModels: suspend (Provider, String, String?, Boolean) -> List<com.past9.phoneaos.agent.ModelInfo> = { _, _, _, _ -> emptyList() },
     val saveModel: (String) -> Unit = {},
     val requestNotifications: () -> Unit = {},
     val openUrl: (String) -> Unit = {},
@@ -442,6 +443,7 @@ fun KeyStep(provider: Provider, onProvider: (Provider) -> Unit, actions: Onboard
     var allowHttp by remember(provider) { mutableStateOf(false) }
     var show by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
+    var fetching by remember { mutableStateOf(false) }
     var result by remember(provider) { mutableStateOf<String?>(null) } // "" = ok
     val scope = rememberCoroutineScope()
     val extra = LocalExtra.current
@@ -450,7 +452,7 @@ fun KeyStep(provider: Provider, onProvider: (Provider) -> Unit, actions: Onboard
     var picked by remember(provider) { mutableStateOf<com.past9.phoneaos.agent.ModelInfo?>(null) }
     var picking by remember { mutableStateOf(false) }
     // The moment the key works, show what it can run: pick a model right there.
-    LaunchedEffect(result) { if (result == "" && !custom) { models = null; picking = true; models = runCatching { actions.listModels(provider, key) }.getOrDefault(emptyList()) } }
+    LaunchedEffect(result) { if (result == "" && !custom) { models = null; picking = true; models = runCatching { actions.listModels(provider, key, null, false) }.getOrDefault(emptyList()) } }
     // HTTPS by default; a plain http:// server needs the explicit opt-in below (loopback is always fine).
     val plainHttp = custom && com.past9.phoneaos.agent.HttpPolicy.isHttp(baseUrl) && !com.past9.phoneaos.agent.HttpPolicy.isLoopback(baseUrl)
     val urlProblem = if (custom && baseUrl.isNotBlank()) com.past9.phoneaos.agent.HttpPolicy.blockReason(baseUrl, allowHttp) else null
@@ -476,7 +478,7 @@ fun KeyStep(provider: Provider, onProvider: (Provider) -> Unit, actions: Onboard
         Spacer(Modifier.height(20.dp))
         if (custom) {
             OutlinedTextField(baseUrl, { baseUrl = it.trim(); result = null }, label = { Text(tr("Base URL")) }, placeholder = { Text("https://api.example.com/v1") }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium,
-                isError = urlProblem != null && !plainHttp, supportingText = urlProblem?.takeIf { !plainHttp }?.let { ({ Text(it, color = MaterialTheme.colorScheme.error) }) })
+                isError = urlProblem != null && !plainHttp, supportingText = urlProblem?.takeIf { !plainHttp }?.let { ({ Text(it, color = MaterialTheme.colorScheme.error) }) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
             if (plainHttp) {
                 Spacer(Modifier.height(10.dp))
                 Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.errorContainer, modifier = Modifier.fillMaxWidth()) {
@@ -497,18 +499,52 @@ fun KeyStep(provider: Provider, onProvider: (Provider) -> Unit, actions: Onboard
                 }
             }
             Spacer(Modifier.height(10.dp))
+            OutlinedTextField(key, { key = it.trim(); result = null }, label = { Text(I18n.trArgs(if (custom) "Service API key" else "%1\$s API key", LocalLanguage.current, if (custom) trAny("Service", LocalLanguage.current) else provider.label)) }, placeholder = { Text(provider.keyHint) }, singleLine = true,
+                visualTransformation = if (show) VisualTransformation.None else PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium,
+                trailingIcon = { IconButton(onClick = { show = !show }) { Icon(if (show) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, if (show) tr("Hide key") else tr("Show key")) } },
+                supportingText = when (result) {
+                    null -> null
+                    "" -> ({ Text(tr("Key works."), color = extra.success) })
+                    else -> ({ Text(result!!, color = MaterialTheme.colorScheme.error) })
+                })
+            Spacer(Modifier.height(10.dp))
             OutlinedTextField(model, { model = it.trim(); result = null }, label = { Text(tr("Model")) }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium)
             Spacer(Modifier.height(10.dp))
+            val noModelsMsg = trAny("No models found at this URL", LocalLanguage.current)
+            Button(
+                onClick = {
+                    if (baseUrl.isBlank() || urlProblem != null || key.length <= 10) return@Button
+                    scope.launch {
+                        fetching = true
+                        models = null
+                        val fetched = runCatching { actions.listModels(Provider.CUSTOM, key, baseUrl, allowHttp) }.getOrDefault(emptyList())
+                        models = fetched
+                        if (fetched.isNotEmpty()) {
+                            picked = fetched.firstOrNull()
+                            picking = true
+                        } else {
+                            result = noModelsMsg
+                        }
+                        fetching = false
+                    }
+                },
+                enabled = baseUrl.isNotBlank() && urlProblem == null && key.length > 10 && !fetching,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
+            ) {
+                Row(Modifier.padding(vertical = 4.dp), horizontalArrangement = Arrangement.Center) {
+                    if (fetching) {
+                        CircularProgressIndicator(Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                        Spacer(Modifier.width(8.dp))
+                    } else {
+                        Icon(Icons.Rounded.CloudDownload, null, Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text(if (fetching) tr("Fetching…") else tr("Fetch models"), style = MaterialTheme.typography.labelLarge)
+                }
+            }
         }
-        OutlinedTextField(key, { key = it.trim(); result = null }, label = { Text(I18n.trArgs(if (custom) "Service API key" else "%1\$s API key", LocalLanguage.current, if (custom) trAny("Service", LocalLanguage.current) else provider.label)) }, placeholder = { Text(provider.keyHint) }, singleLine = true,
-            visualTransformation = if (show) VisualTransformation.None else PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium,
-            trailingIcon = { IconButton(onClick = { show = !show }) { Icon(if (show) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, if (show) tr("Hide key") else tr("Show key")) } },
-            supportingText = when (result) {
-                null -> null
-                "" -> ({ Text(tr("Key works."), color = extra.success) })
-                else -> ({ Text(result!!, color = MaterialTheme.colorScheme.error) })
-            })
-        if (result == "" && !custom) {
+        if (result == "" && (models?.isNotEmpty() == true)) {
             Spacer(Modifier.height(8.dp))
             Surface(onClick = { picking = true }, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -520,7 +556,20 @@ fun KeyStep(provider: Provider, onProvider: (Provider) -> Unit, actions: Onboard
                 }
             }
         }
-        if (picking) ModelPickerSheet(tr("Pick your model"), models, picked?.id ?: "", null, onPick = { picked = it; actions.saveModel(it.id); picking = false }, onDismiss = { picking = false })
+        if (picking) ModelPickerSheet(
+            title = tr("Pick your model"),
+            models = models,
+            current = picked?.id ?: "",
+            error = null,
+            onPick = { picked = it; actions.saveModel(it.id); model = it.id; picking = false },
+            onDismiss = { picking = false },
+            allowManualEntry = custom,
+            onManualEntry = { manualId ->
+                actions.saveModel(manualId)
+                model = manualId
+                picking = false
+            }
+        )
         Spacer(Modifier.height(16.dp))
         val (url, steps) = keySteps.getValue(provider)
         Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
