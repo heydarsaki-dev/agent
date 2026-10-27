@@ -18,12 +18,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
+      - name: Setup Android SDK (use built-in)
         uses: android-actions/setup-android@v3
         with:
-          api-level: 35
-          ndk: "25"
-          build-tools: "35.0.0"
+          cache: gradle
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -49,7 +47,7 @@ jobs:
       - name: Build Release APK
         run: ./gradlew assembleRelease -PsigningProps=/tmp/signing.properties
         env:
-          ANDROID_HOME: ${{ github.workspace }}/android-sdk
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
