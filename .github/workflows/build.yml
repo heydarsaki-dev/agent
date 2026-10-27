@@ -39,6 +39,7 @@ jobs:
 
       - name: Generate keystore and signing properties
         run: |
+          mkdir -p agent/app
           echo 'storeFile=release.keystore' > agent/app/signing.properties
           echo 'storePassword=password' >> agent/app/signing.properties
           echo 'keyAlias=releasekey' >> agent/app/signing.properties
@@ -46,7 +47,7 @@ jobs:
           keytool -genkeypair -alias releasekey -keyalg RSA -keysize 2048 -validity 3650 \
             -keystore agent/app/release.keystore \
             -storepass password -keypass password \
-            -dname "CN=Test, OU=Test, O=Test, L=Test, S=Test, C=US" 2>/dev/null || true
+            -dname "CN=Test, OU=Test, O=Test, L=Test, S=Test, C=US"
 
       - name: Build Release APK
         run: ./gradlew :app:assembleRelease -PsigningProps=agent/app/signing.properties
