@@ -39,34 +39,34 @@ jobs:
 
       - name: Generate keystore and signing properties
         run: |
-          mkdir -p agent/app
-          echo 'storeFile=release.keystore' > agent/app/signing.properties
-          echo 'storePassword=password' >> agent/app/signing.properties
-          echo 'keyAlias=releasekey' >> agent/app/signing.properties
-          echo 'keyPassword=password' >> agent/app/signing.properties
+          mkdir -p app
+          echo 'storeFile=release.keystore' > app/signing.properties
+          echo 'storePassword=password' >> app/signing.properties
+          echo 'keyAlias=releasekey' >> app/signing.properties
+          echo 'keyPassword=password' >> app/signing.properties
           keytool -genkeypair -alias releasekey -keyalg RSA -keysize 2048 -validity 3650 \
-            -keystore agent/app/release.keystore \
+            -keystore app/release.keystore \
             -storepass password -keypass password \
             -dname "CN=Test, OU=Test, O=Test, L=Test, S=Test, C=US"
 
       - name: Build Release APK
-        run: ./gradlew :app:assembleRelease -PsigningProps=agent/app/signing.properties
+        run: ./gradlew :app:assembleRelease -PsigningProps=app/signing.properties
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
 
       - name: List ALL build outputs
         run: |
-          echo "=== ALL files in agent/app/build ==="
-          find agent/app/build -type f | sort
+          echo "=== ALL files in app/build ==="
+          find app/build -type f | sort
           echo "=== ALL APK/AAB files ==="
-          find agent/app/build -type f \( -name "*.apk" -o -name "*.aab" \) 2>/dev/null | sort
+          find app/build -type f \( -name "*.apk" -o -name "*.aab" \) 2>/dev/null | sort
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release
           path: |
-            agent/app/build/outputs/**/*.apk
-            agent/app/build/outputs/**/*.aab
-            agent/app/build/**/*.apk
-            agent/app/build/**/*.aab
+            app/build/outputs/**/*.apk
+            app/build/outputs/**/*.aab
+            app/build/**/*.apk
+            app/build/**/*.aab
