@@ -8,6 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agent
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -25,7 +28,7 @@ jobs:
           ls -la /usr/local/lib/android/sdk/
 
       - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+        run: chmod +x ../gradlew
 
       - name: Cache Gradle packages
         uses: actions/cache@v4
@@ -39,27 +42,30 @@ jobs:
 
       - name: Copy keystore and signing properties
         run: |
-          mkdir -p agent/app
-          echo 'storeFile=release.keystore' > agent/app/signing.properties
-          echo 'storePassword=password' >> agent/app/signing.properties
-          echo 'keyAlias=releasekey' >> agent/app/signing.properties
-          echo 'keyPassword=password' >> agent/app/signing.properties
-          cp /tmp/release.keystore agent/app/release.keystore 2>/dev/null || echo "Using generated keystore"
+          echo 'storeFile=release.keystore' > signing.properties
+          echo 'storePassword=password' >> signing.properties
+          echo 'keyAlias=releasekey' >> signing.properties
+          echo 'keyPassword=password' >> signing.properties
+          cp ../release.keystore release.keystore 2>/dev/null || echo "Using generated keystore"
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease -PsigningProps=agent/app/signing.properties
+        run: ../gradlew assembleRelease -PsigningProps=signing.properties
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
 
       - name: List ALL build outputs
         run: |
-          echo "=== ALL files in agent/app/build ==="
-          find agent/app/build -type f | sort
+          echo "=== ALL files in app/build ==="
+          find build -type f | sort
           echo "=== ALL APK/AAB files ==="
-          find agent/app/build -type f \( -name "*.apk" -o -name "*.aab" \) 2>/dev/null | sort
+          find build -type f \( -name "*.apk" -o -name "*.aab" \) 2>/dev/null | sort
 
-      - name: Upload ALL build artifacts
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-build-outputs
-          path: agent/app/build/outputs/
+          name: app-release
+          path: |
+            build/outputs/**/*.apk
+            build/outputs/**/*.aab
+            build/**/*.apk
+            build/**/*.aab
