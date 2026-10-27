@@ -18,10 +18,12 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK (use built-in)
-        uses: android-actions/setup-android@v3
-        with:
-          cache: gradle
+      - name: Use built-in Android SDK
+        run: |
+          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+          # Verify SDK exists
+          ls -la /usr/local/lib/android/sdk/
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
