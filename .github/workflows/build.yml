@@ -22,7 +22,6 @@ jobs:
         run: |
           echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
-          # Verify SDK exists
           ls -la /usr/local/lib/android/sdk/
 
       - name: Grant execute permission for gradlew
@@ -38,16 +37,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Copy signing files
+      - name: Copy keystore and signing properties
         run: |
-          mkdir -p /tmp
-          echo 'storeFile=release.keystore' > /tmp/signing.properties
-          echo 'storePassword=password' >> /tmp/signing.properties
-          echo 'keyAlias=releasekey' >> /tmp/signing.properties
-          echo 'keyPassword=password' >> /tmp/signing.properties
+          mkdir -p agent/app
+          echo 'storeFile=release.keystore' > agent/app/signing.properties
+          echo 'storePassword=password' >> agent/app/signing.properties
+          echo 'keyAlias=releasekey' >> agent/app/signing.properties
+          echo 'keyPassword=password' >> agent/app/signing.properties
+          # Copy keystore to the expected location
+          cp /tmp/release.keystore agent/app/release.keystore 2>/dev/null || echo "Using generated keystore"
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease -PsigningProps=/tmp/signing.properties
+        run: ./gradlew assembleRelease -PsigningProps=agent/app/signing.properties
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
 
