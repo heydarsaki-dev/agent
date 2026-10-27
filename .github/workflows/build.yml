@@ -37,15 +37,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Copy keystore and signing properties to app module
+      - name: Generate keystore and signing properties
         run: |
           echo 'storeFile=release.keystore' > agent/app/signing.properties
           echo 'storePassword=password' >> agent/app/signing.properties
           echo 'keyAlias=releasekey' >> agent/app/signing.properties
           echo 'keyPassword=password' >> agent/app/signing.properties
-          cp release.keystore agent/app/release.keystore 2>/dev/null || echo "Using generated keystore"
+          keytool -genkeypair -alias releasekey -keyalg RSA -keysize 2048 -validity 3650 \
+            -keystore agent/app/release.keystore \
+            -storepass password -keypass password \
+            -dname "CN=Test, OU=Test, O=Test, L=Test, S=Test, C=US" 2>/dev/null || true
 
-      - name: Build Release APK (from app module)
+      - name: Build Release APK
         run: ./gradlew :app:assembleRelease -PsigningProps=agent/app/signing.properties
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
