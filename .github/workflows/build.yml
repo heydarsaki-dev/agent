@@ -37,20 +37,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Generate keystore and signing properties
+      - name: Generate keystore and signing properties at project root
         run: |
-          mkdir -p app
-          echo 'storeFile=release.keystore' > app/signing.properties
-          echo 'storePassword=password' >> app/signing.properties
-          echo 'keyAlias=releasekey' >> app/signing.properties
-          echo 'keyPassword=password' >> app/signing.properties
           keytool -genkeypair -alias releasekey -keyalg RSA -keysize 2048 -validity 3650 \
-            -keystore app/release.keystore \
+            -keystore release.keystore \
             -storepass password -keypass password \
             -dname "CN=Test, OU=Test, O=Test, L=Test, S=Test, C=US"
+          echo 'storeFile=release.keystore' > signing.properties
+          echo 'storePassword=password' >> signing.properties
+          echo 'keyAlias=releasekey' >> signing.properties
+          echo 'keyPassword=password' >> signing.properties
 
       - name: Build Release APK
-        run: ./gradlew :app:assembleRelease -PsigningProps=app/signing.properties
+        run: ./gradlew :app:assembleRelease -PsigningProps=../signing.properties
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
 
@@ -64,7 +63,7 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: app-release-signed
           path: |
             app/build/outputs/**/*.apk
             app/build/outputs/**/*.aab
