@@ -8,6 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agent
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -37,7 +40,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Generate keystore and signing properties at project root
+      - name: Generate keystore and signing properties
         run: |
           keytool -genkeypair -alias releasekey -keyalg RSA -keysize 2048 -validity 3650 \
             -keystore release.keystore \
@@ -49,7 +52,7 @@ jobs:
           echo 'keyPassword=password' >> signing.properties
 
       - name: Build Release APK
-        run: ./gradlew :app:assembleRelease -PsigningProps=../signing.properties
+        run: ./gradlew assembleRelease -PsigningProps=signing.properties
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
 
