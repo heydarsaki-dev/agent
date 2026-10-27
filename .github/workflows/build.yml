@@ -8,9 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: agent
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -21,14 +18,15 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Use built-in Android SDK
-        run: |
-          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
-          ls -la /usr/local/lib/android/sdk/
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 35
+          ndk: "25"
+          build-tools: "35.0.0"
 
       - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+        run: chmod +x agent/gradlew
 
       - name: Cache Gradle packages
         uses: actions/cache@v4
@@ -40,8 +38,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Generate keystore and signing properties
+      - name: Generate keystore and signing properties in app module
         run: |
+          cd agent/app
           keytool -genkeypair -alias releasekey -keyalg RSA -keysize 2048 -validity 3650 \
             -keystore release.keystore \
             -storepass password -keypass password \
@@ -50,25 +49,20 @@ jobs:
           echo 'storePassword=password' >> signing.properties
           echo 'keyAlias=releasekey' >> signing.properties
           echo 'keyPassword=password' >> signing.properties
+          # Get absolute path for signing properties
+          echo "SIGNING_PROPS_PATH=$(pwd)/signing.properties" >> $GITHUB_ENV
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease -PsigningProps=signing.properties
+        run: ./gradlew :app:assembleRelease -PsigningProps=$SIGNING_PROPS_PATH
         env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_HOME: ${{ github.workspace }}/android-sdk
 
       - name: List ALL build outputs
         run: |
-          echo "=== ALL files in app/build ==="
-          find app/build -type f | sort
-          echo "=== ALL APK/AAB files ==="
-          find app/build -type f \( -name "*.apk" -o -name "*.aab" \) 2>/dev/null | sort
+          find agent/app/build -type f \( -name "*.apk" -o -name "*.aab" \) 2>/dev/null | sort
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-signed
-          path: |
-            app/build/outputs/**/*.apk
-            app/build/outputs/**/*.aab
-            app/build/**/*.apk
-            app/build/**/*.aab
+          path: agent/app/build/outputs/**/*.apk
