@@ -51,17 +51,15 @@ jobs:
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
 
-      - name: List all output files
+      - name: List ALL build outputs
         run: |
-          echo "=== All files in agent/app/build/outputs ==="
-          find agent/app/build/outputs -type f -name "*.apk" 2>/dev/null | sort
-          echo "=== All files in agent/app/build ==="
-          find agent/app/build -type f -name "*.apk" 2>/dev/null | sort
+          echo "=== ALL files in agent/app/build ==="
+          find agent/app/build -type f | sort
+          echo "=== ALL APK/AAB files ==="
+          find agent/app/build -type f \( -name "*.apk" -o -name "*.aab" \) 2>/dev/null | sort
 
-      - name: Upload APK artifact
+      - name: Upload ALL build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
-          path: |
-            agent/app/build/outputs/**/*.apk
-            agent/app/build/**/*.apk
+          name: app-build-outputs
+          path: agent/app/build/outputs/
