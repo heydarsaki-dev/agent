@@ -3,8 +3,6 @@ name: Build Signed APK
 on:
   push:
     branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
   workflow_dispatch:
 
 jobs:
@@ -24,11 +22,14 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           api-level: 35
-          ndk: "25"
-          build-tools: "35.0.0"
+          target: google_apis
+          ndk: '25.1.8937393'
+          build-tools: '35.0.0'
+          emulator: true
+          sys-img: android-35 google_apis x86_64
 
       - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+        run: chmod +x agent/gradlew
 
       - name: Cache Gradle packages
         uses: actions/cache@v4
@@ -43,12 +44,15 @@ jobs:
       - name: Build Release APK
         run: |
           cd agent
+          echo 'storeFile=release.keystore' > /tmp/signing.properties
+          echo 'storePassword=password' >> /tmp/signing.properties
+          echo 'keyAlias=releasekey' >> /tmp/signing.properties
+          echo 'keyPassword=password' >> /tmp/signing.properties
+          
           ./gradlew assembleRelease -PsigningProps=/tmp/signing.properties
-        env:
-          ANDROID_HOME: ${{ github.workspace }}/android-sdk
 
-      - name: Upload unsigned APK artifact
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-unsigned
+          name: app-release
           path: agent/app/build/outputs/apk/release/app-release.apk
