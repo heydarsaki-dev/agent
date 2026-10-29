@@ -37,7 +37,7 @@ object Routines {
         if (days.any { it < 1 } || days.isEmpty() || h !in 0..23 || m !in 0..59) null else Triple(days, h, m)
     }.getOrNull()
 
-    fun weeklyLabel(spec: String): String = parseWeekly(spec)?.let { (days, h, m) ->
+    fun weeklyLabel(spec: String, language: String = "en"): String = parseWeekly(spec)?.let { (days, h, m) ->
         val long = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
         val d = when {
             days == setOf(1, 2, 3, 4, 5) -> "weekday"; days == setOf(6, 7) -> "weekend day"; days.size == 1 -> long[days.first() - 1]

@@ -464,12 +464,12 @@ class MainActivity : ComponentActivity() {
                         onDelete = { m -> scope.launch { g.db.memory().delete(m.id) } },
                         onExport = { uri, done -> scope.launch {
                             val note = runCatching { this@MainActivity.contentResolver.openOutputStream(uri)!!.use { com.past9.phoneaos.data.MemoryTransfer.export(g.db.memory(), it) } }
-                                .fold({ com.past9.phoneaos.ui.screens.TransferNote.exported(it) }, { com.past9.phoneaos.ui.screens.TransferNote.failed("Couldn't save the zip", it.message) })
+                                .fold({ com.past9.phoneaos.ui.screens.TransferNote.exported(it, g.settings.state.value.language) }, { com.past9.phoneaos.ui.screens.TransferNote.failed("Couldn't save the zip", it.message, g.settings.state.value.language) })
                             done(note) } },
                         onImport = { uri, done -> scope.launch {
                             val name = runCatching { this@MainActivity.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c -> if (c.moveToFirst()) c.getString(0) else null } }.getOrNull() ?: uri.lastPathSegment ?: "memory.zip"
                             val note = runCatching { this@MainActivity.contentResolver.openInputStream(uri)!!.use { com.past9.phoneaos.data.MemoryTransfer.importFrom(name, it, g.db.memory()) } }
-                                .fold({ com.past9.phoneaos.ui.screens.TransferNote.imported(it) }, { com.past9.phoneaos.ui.screens.TransferNote.failed("Couldn't read that file", it.message) })
+                                .fold({ com.past9.phoneaos.ui.screens.TransferNote.imported(it, g.settings.state.value.language) }, { com.past9.phoneaos.ui.screens.TransferNote.failed("Couldn't read that file", it.message, g.settings.state.value.language) })
                             done(note) } },
                     )
                     if (!twoPane) MemoryScreen(memories, bottomPadding = barPad, actions = memoryActions)

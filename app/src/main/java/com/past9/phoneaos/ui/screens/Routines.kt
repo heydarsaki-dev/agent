@@ -39,22 +39,42 @@ data class RoutineActions(
     val onSave: (TriggerRow) -> Unit = {},
 )
 
-fun whenLabel(t: TriggerRow): String = when (t.kind) {
-    "at" -> parseWhen(t.spec)?.let { "Once, " + dueLabel(it) } ?: "Once"
-    "daily" -> "Every day at ${t.spec}"
-    "weekly" -> Routines.weeklyLabel(t.spec)
-    "nightly" -> "Every night while charging, from ${t.spec}"
-    "watch" -> (t.spec.toIntOrNull() ?: 1440).let { m -> "Checks " + when { m >= 1440 && m % 1440 == 0 -> if (m == 1440) "daily" else "every ${m / 1440} days"; m % 60 == 0 -> "every ${m / 60} h"; else -> "every $m min" } + ", wakes your agent only when it fires" }
-    "interval" -> (t.spec.toIntOrNull() ?: 60).let { if (it % 60 == 0) "Every ${it / 60} h" else "Every $it min" }
-    "email" -> "When a new email matches: ${t.spec}"
-    "wake" -> t.spec.toLongOrNull()?.let { "Once, " + dueLabel(it) + ", only if there's something to act on" } ?: "Once"
-    "notification" -> t.spec.split("|").let { "When ${it[0]} notifies" + (it.getOrNull(1)?.takeIf { w -> w.isNotBlank() }?.let { w -> " about \"$w\"" } ?: "") }
-    else -> t.kind
+fun whenLabel(t: TriggerRow, language: String = "en"): String {
+    fun tr(s: String) = com.past9.phoneaos.ui.i18n.I18n.tr(s, language)
+    fun trA(s: String, vararg a: Any?) = com.past9.phoneaos.ui.i18n.I18n.trArgs(s, language, *a)
+    return when (t.kind) {
+        "at" -> parseWhen(t.spec)?.let { trA("Once, %1\$s", dueLabel(it)) } ?: tr("Once")
+        "daily" -> trA("Every day at %1\$s", t.spec)
+        "weekly" -> Routines.weeklyLabel(t.spec, language)
+        "nightly" -> trA("Every night while charging, from %1\$s", t.spec)
+        "watch" -> (t.spec.toIntOrNull() ?: 1440).let { m ->
+            val every = when {
+                m >= 1440 && m % 1440 == 0 -> if (m == 1440) tr("daily") else trA("every %1\$s days", m / 1440)
+                m % 60 == 0 -> trA("every %1\$s h", m / 60)
+                else -> trA("every %1\$s min", m)
+            }
+            trA("Checks %1\$s, wakes your agent only when it fires", every)
+        }
+        "interval" -> (t.spec.toIntOrNull() ?: 60).let { if (it % 60 == 0) trA("Every %1\$s h", it / 60) else trA("Every %1\$s min", it) }
+        "email" -> trA("When a new email matches: %1\$s", t.spec)
+        "wake" -> t.spec.toLongOrNull()?.let { trA("Once, %1\$s, only if there's something to act on", dueLabel(it)) } ?: tr("Once")
+        "notification" -> t.spec.split("|").let { parts ->
+            val about = parts.getOrNull(1)?.takeIf { w -> w.isNotBlank() }?.let { w -> trA(" about \"%1\$s\"", w) }.orEmpty()
+            trA("When %1\$s notifies", parts[0]) + about
+        }
+        else -> t.kind
+    }
 }
 
-fun inLabel(ms: Long): String = when {
-    ms < 60_000 -> "in under a minute"; ms < 3_600_000 -> "in ${ms / 60_000} min"
-    ms < 86_400_000 -> "in ${ms / 3_600_000} h ${(ms % 3_600_000) / 60_000} min"; else -> "in ${ms / 86_400_000} d"
+fun inLabel(ms: Long, language: String = "en"): String {
+    fun tr(s: String) = com.past9.phoneaos.ui.i18n.I18n.tr(s, language)
+    fun trA(s: String, vararg a: Any?) = com.past9.phoneaos.ui.i18n.I18n.trArgs(s, language, *a)
+    return when {
+        ms < 60_000 -> tr("in under a minute")
+        ms < 3_600_000 -> trA("in %1\$s min", ms / 60_000)
+        ms < 86_400_000 -> trA("in %1\$s h %2\$s min", ms / 3_600_000, (ms % 3_600_000) / 60_000)
+        else -> trA("in %1\$s d", ms / 86_400_000)
+    }
 }
 
 private fun kindIcon(kind: String): ImageVector = when (kind) { "at" -> Icons.Rounded.Event; "daily" -> Icons.Rounded.WbSunny; "weekly" -> Icons.Rounded.EventRepeat; "nightly" -> Icons.Rounded.Bedtime; "watch" -> Icons.Rounded.TrackChanges; "interval" -> Icons.Rounded.Autorenew; "notification" -> Icons.Rounded.NotificationsActive; else -> Icons.Rounded.Mail }
@@ -91,18 +111,18 @@ fun RoutinesScreen(routines: List<TriggerRow>, actions: RoutineActions, now: Lon
         onDelete = if (r.id != 0L) ({ actions.onDelete(r); editing = null }) else null) }
 }
 
-private fun clockLabel(ms: Long, now: java.time.ZonedDateTime): Pair<String, String> {
+private fun clockLabel(ms: Long, now: java.time.ZonedDateTime, lang: String = "en"): Pair<String, String> {
     val at = now.plusNanos(ms * 1_000_000)
     val time = at.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
-    val day = when (at.toLocalDate()) { now.toLocalDate() -> "Today"; now.toLocalDate().plusDays(1) -> "Tomorrow"; else -> at.format(java.time.format.DateTimeFormatter.ofPattern("EEE d MMM")) }
-    return time to "$day, ${inLabel(ms)}"
+    val day = when (at.toLocalDate()) { now.toLocalDate() -> com.past9.phoneaos.ui.i18n.I18n.tr("Today", lang); now.toLocalDate().plusDays(1) -> com.past9.phoneaos.ui.i18n.I18n.tr("Tomorrow", lang); else -> at.format(java.time.format.DateTimeFormatter.ofPattern("EEE d MMM")) }
+    return time to "$day, ${inLabel(ms, lang)}"
 }
 
 /** The one loud thing on the page: what your agent does next, and when. */
 @Composable
 private fun NextUp(r: TriggerRow, ms: Long, now: java.time.ZonedDateTime, onRun: () -> Unit, onOpen: () -> Unit) {
     val cs = MaterialTheme.colorScheme
-    val (time, day) = clockLabel(ms, now)
+    val (time, day) = clockLabel(ms, now, com.past9.phoneaos.ui.i18n.LocalLanguage.current)
     Surface(onClick = onOpen, shape = MaterialTheme.shapes.extraLarge, color = cs.primaryContainer, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(22.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -133,7 +153,7 @@ private fun RoutineRow(r: TriggerRow, actions: RoutineActions, now: java.time.Zo
         r.kind == "email" -> tr("Checks every 15 min")
         r.kind == "notification" -> tr("Listening")
         r.kind == "watch" -> tr("On watch")
-        next != null -> clockLabel(next, now).let { (t, d) -> "${d.substringBefore(",")} at $t" }
+        next != null -> clockLabel(next, now, com.past9.phoneaos.ui.i18n.LocalLanguage.current).let { (t, d) -> com.past9.phoneaos.ui.i18n.I18n.trArgs("%1\$s at %2\$s", com.past9.phoneaos.ui.i18n.LocalLanguage.current, d.substringBefore(","), t) }
         else -> tr("Finished")
     }
     Surface(onClick = onEdit, shape = MaterialTheme.shapes.large, color = if (r.enabled) cs.surfaceContainerLow else cs.surfaceContainerLowest, modifier = Modifier.fillMaxWidth()) {
@@ -145,7 +165,7 @@ private fun RoutineRow(r: TriggerRow, actions: RoutineActions, now: java.time.Zo
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
                     Text(r.name, style = MaterialTheme.typography.titleMedium, color = if (r.enabled) cs.onSurface else cs.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(whenLabel(r), style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(whenLabel(r, com.past9.phoneaos.ui.i18n.LocalLanguage.current), style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Spacer(Modifier.width(8.dp))
                 Switch(r.enabled, { actions.onToggle(r) })
@@ -181,7 +201,7 @@ internal fun RoutineEditor(r: TriggerRow, onDismiss: () -> Unit, onSave: (Trigge
         "daily", "nightly" -> Regex("^\\d{1,2}:\\d{2}$").matches(spec.trim()); "weekly" -> Routines.parseWeekly(spec) != null; "interval", "watch" -> (spec.trim().toIntOrNull() ?: 0) >= 15
         "at" -> (parseWhen(spec) ?: 0) > System.currentTimeMillis(); else -> spec.isNotBlank()
     }
-    com.past9.phoneaos.ui.AppSheet(kindIcon(kind), if (r.id == 0L) tr("Runs on its own") else whenLabel(r.copy(kind = kind, spec = spec)), if (r.id == 0L) tr("New routine") else tr("Edit routine"), onDismiss,
+    com.past9.phoneaos.ui.AppSheet(kindIcon(kind), if (r.id == 0L) tr("Runs on its own") else whenLabel(r.copy(kind = kind, spec = spec), com.past9.phoneaos.ui.i18n.LocalLanguage.current), if (r.id == 0L) tr("New routine") else tr("Edit routine"), onDismiss,
         primary = if (r.id == 0L) tr("Start this routine") else tr("Save routine"), primaryEnabled = valid, shape = MaterialShapes.Sunny,
         onPrimary = { onSave(r.copy(name = name.trim(), prompt = prompt.trim(), kind = kind, spec = spec.trim(), cursor = if (kind != r.kind || spec != r.spec) "" else r.cursor, enabled = true)) },
         secondary = if (onRunNow == null && onDelete == null) null else ({

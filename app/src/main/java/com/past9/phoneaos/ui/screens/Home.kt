@@ -95,6 +95,7 @@ private fun dayKey(ms: Long) = java.time.Instant.ofEpochMilli(ms).atZone(ZoneId.
 @Composable
 fun HomeScreen(s: HomeState, actions: HomeActions, bottomPadding: Dp = 120.dp) {
     val cs = MaterialTheme.colorScheme
+    val lang = LocalLanguage.current
     val today = dayKey(s.now)
     val pending = s.items.filter { it.kind == "question" && !JSONObject(it.meta).has("answer") }
     val myTodos = s.tasks.filter { it.owner == "user" && it.status != "done" }.sortedWith(compareBy({ it.dueAt ?: Long.MAX_VALUE }, { it.createdAt }))
@@ -194,7 +195,7 @@ fun HomeScreen(s: HomeState, actions: HomeActions, bottomPadding: Dp = 120.dp) {
                 }
             }
         }
-        val coming = comingUp(s)
+        val coming = comingUp(s, lang)
         if (coming.isNotEmpty()) {
             item { SectionHeader(tr("Coming up"), tr("Routines and deadlines in the next few days"), Modifier.padding(start = 4.dp, top = 6.dp)) }
             item {
@@ -304,8 +305,8 @@ fun TodoLine(t: TaskRow, today: LocalDate, onToggle: (TaskRow) -> Unit) {
     val due = t.dueAt?.let { dayKey(it) }
     val (label, color) = when {
         due == null -> null to cs.onSurfaceVariant
-        due.isBefore(today) -> "Overdue · ${dueLabel(t.dueAt)}" to cs.error
-        due == today -> "Today${dueLabel(t.dueAt).substringAfter(",", "").let { if (it.isBlank()) "" else ",$it" }}" to cs.tertiary
+        due.isBefore(today) -> I18n.trArgs("Overdue · %1\$s", LocalLanguage.current, dueLabel(t.dueAt)) to cs.error
+        due == today -> I18n.tr("Today", LocalLanguage.current) + dueLabel(t.dueAt).substringAfter(",", "").let { if (it.isBlank()) "" else ",$it" } to cs.tertiary
         due == today.plusDays(1) -> tr("Tomorrow") to cs.onSurfaceVariant
         else -> dueLabel(t.dueAt) to cs.onSurfaceVariant
     }
@@ -343,18 +344,18 @@ fun GoalChipCard(g: GoalRow, tasks: List<TaskRow>, onClick: () -> Unit) {
 
 private data class Coming(val icon: ImageVector, val title: String, val line: String, val urgent: Boolean)
 
-private fun comingUp(s: HomeState): List<Coming> {
+private fun comingUp(s: HomeState, language: String = "en"): List<Coming> {
     val zone = ZoneId.systemDefault()
     val now = java.time.Instant.ofEpochMilli(s.now).atZone(zone)
     val out = mutableListOf<Pair<Long, Coming>>()
     s.routines.filter { it.enabled }.forEach { r ->
         val next = Routines.nextRunIn(r, now)
-        if (r.kind == "email" || r.kind == "notification") out += Long.MAX_VALUE - 1 to Coming(Icons.Rounded.Bolt, r.name, if (r.kind == "email") "When a matching email arrives" else "When a matching notification arrives", false)
-        else if (next != null) out += next to Coming(Icons.Rounded.Schedule, r.name, whenLabel(r) + " · " + inLabel(next), false)
+        if (r.kind == "email" || r.kind == "notification") out += Long.MAX_VALUE - 1 to Coming(Icons.Rounded.Bolt, r.name, if (r.kind == "email") I18n.tr("When a matching email arrives", language) else I18n.tr("When a matching notification arrives", language), false)
+        else if (next != null) out += next to Coming(Icons.Rounded.Schedule, r.name, whenLabel(r, language) + " · " + inLabel(next, language), false)
     }
     s.tasks.filter { it.status != "done" && it.dueAt != null && it.dueAt - s.now < 3 * 86_400_000L }.forEach { t ->
         val ms = t.dueAt!! - s.now
-        out += ms to Coming(Icons.Rounded.Event, t.title, if (ms < 0) "Overdue" else "Due " + dueLabel(t.dueAt), ms < 86_400_000L)
+        out += ms to Coming(Icons.Rounded.Event, t.title, if (ms < 0) I18n.tr("Overdue", language) else I18n.trArgs("Due %1\$s", language, dueLabel(t.dueAt)), ms < 86_400_000L)
     }
     return out.sortedBy { it.first }.map { it.second }
 }

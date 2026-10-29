@@ -46,16 +46,25 @@ data class MemoryActions(
 /** What an import or export did, shown as a card in the Memory list (never a pop-up). */
 data class TransferNote(val headline: String, val sub: String, val rows: List<Pair<String, Int>> = emptyList(), val unsorted: Int = 0, val footnote: String? = null, val ok: Boolean = true) { companion object }
 
-fun TransferNote.Companion.imported(s: com.past9.phoneaos.data.MemoryTransfer.Summary): TransferNote {
+fun TransferNote.Companion.imported(s: com.past9.phoneaos.data.MemoryTransfer.Summary, language: String = "en"): TransferNote {
+    fun tr(x: String) = com.past9.phoneaos.ui.i18n.I18n.tr(x, language)
+    fun trA(x: String, vararg a: Any?) = com.past9.phoneaos.ui.i18n.I18n.trArgs(x, language, *a)
     val r = s.result
-    if (s.pages == 0) return TransferNote("Nothing to import", "No memory pages were found in that file." + if (s.ignored > 0) " ${s.ignored} file${if (s.ignored == 1) "" else "s"} couldn't be read." else "", ok = false)
-    val unsortedLine = if (r.unsorted > 0) " ${r.unsorted} came in unsorted: tap Show unsorted to classify them." else ""
-    return TransferNote("${s.pages} page${if (s.pages == 1) "" else "s"} ${if (r.added == s.pages) "added" else "imported"}", "Your agent can search them now.$unsortedLine",
-        listOf("New" to r.added, "Updated" to r.updated, "Already there" to r.skipped, "Unsorted" to r.unsorted, "Not pinned" to r.pinnedDropped).filter { (l, n) -> n > 0 || l == "New" }, r.unsorted,
-        if (r.pinnedDropped > 0) "Only ${com.past9.phoneaos.data.MemoryTransfer.MAX_PINNED} pages can be pinned, so ${r.pinnedDropped} came in unpinned." else null)
+    if (s.pages == 0) return TransferNote(tr("Nothing to import"),
+        tr("No memory pages were found in that file.") + if (s.ignored > 0) " " + trA(if (s.ignored == 1) "%1\$s file couldn't be read." else "%1\$s files couldn't be read.", s.ignored) else "", ok = false)
+    val unsortedLine = if (r.unsorted > 0) " " + trA("%1\$s came in unsorted: tap Show unsorted to classify them.", r.unsorted) else ""
+    val headline = if (r.added == s.pages) trA(if (s.pages == 1) "%1\$s page added" else "%1\$s pages added", s.pages)
+        else trA(if (s.pages == 1) "%1\$s page imported" else "%1\$s pages imported", s.pages)
+    return TransferNote(headline, tr("Your agent can search them now.") + unsortedLine,
+        listOf(tr("New") to r.added, tr("Updated") to r.updated, tr("Already there") to r.skipped, tr("Unsorted") to r.unsorted, tr("Not pinned") to r.pinnedDropped).filter { (l, n) -> n > 0 || l == tr("New") }, r.unsorted,
+        if (r.pinnedDropped > 0) trA("Only %1\$s pages can be pinned, so %2\$s came in unpinned.", com.past9.phoneaos.data.MemoryTransfer.MAX_PINNED, r.pinnedDropped) else null)
 }
-fun TransferNote.Companion.exported(n: Int) = TransferNote("$n page${if (n == 1) "" else "s"} saved", "One zip file. Import memories brings every page back.")
-fun TransferNote.Companion.failed(what: String, why: String?) = TransferNote("That didn't work", "$what${why?.takeIf { it.isNotBlank() }?.let { ": $it" } ?: ""}", ok = false)
+fun TransferNote.Companion.exported(n: Int, language: String = "en") = TransferNote(
+    com.past9.phoneaos.ui.i18n.I18n.trArgs(if (n == 1) "%1\$s page saved" else "%1\$s pages saved", language, n),
+    com.past9.phoneaos.ui.i18n.I18n.tr("One zip file. Import memories brings every page back.", language))
+fun TransferNote.Companion.failed(what: String, why: String?, language: String = "en") = TransferNote(
+    com.past9.phoneaos.ui.i18n.I18n.tr("That didn't work", language),
+    com.past9.phoneaos.ui.i18n.I18n.tr(what, language) + (why?.takeIf { it.isNotBlank() }?.let { ": $it" } ?: ""), ok = false)
 
 fun pageIcon(kind: String): ImageVector = when (kind) {
     "person" -> Icons.Rounded.Person; "company" -> Icons.Rounded.Business; "place" -> Icons.Rounded.Place; "project" -> Icons.Rounded.Flag
@@ -155,7 +164,7 @@ internal fun TransferCard(n: TransferNote, onPick: (String) -> Unit) {
                 }
                 Column(Modifier.weight(1f)) {
                     Text(tr(n.headline), style = MaterialTheme.typography.headlineSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold))
-                    Text(tr(n.sub), style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
+                    Text(n.sub, style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
                 }
             }
             if (n.rows.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -163,8 +172,7 @@ internal fun TransferCard(n: TransferNote, onPick: (String) -> Unit) {
                     Surface(shape = RoundedCornerShape(18.dp), color = cs.surfaceContainerHighest) {
                         Column(Modifier.widthIn(min = 92.dp).padding(horizontal = 16.dp, vertical = 12.dp)) {
                             Text(count.toString(), style = MaterialTheme.typography.titleLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, fontFeatureSettings = "tnum"), color = cs.onSurface)
-                            Text(tr(label), style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant, maxLines = 1)
-                        }
+                            Text(tr(label), style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant, maxLines = 1)                        }
                     }
                 }
             }
